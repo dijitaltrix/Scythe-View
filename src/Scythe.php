@@ -238,15 +238,15 @@ class Scythe
 			# remove blade comments
 			'/(\s*){{--\s*(.+?)\s*--}}/i' => '$1',
 
+			# echo with a default
+			'/(\s*){{\s*(.+?)\s*or\s*(.+?)\s*}}/i' => '$1<?php echo (isset($2)) ? htmlentities($2) : $3; ?>',
+
 			# echo an escaped variable 
 			'/(\s*){{\s*(.+?)\s*}}/i' => '$1<?php echo htmlentities($2); ?>',
 
 			# echo an unescaped variable
 			'/(\s*){!!\s*(.+?)\s*!!}/i' => '$1<?php echo $2; ?>',
 
-			# echo with a default
-			'/(\s*){{\s*(.+?)\s*or\s*(.+?)\s*}}/i' => '$1<?php isset($2) ? echo $2 : $3; ?>',
-            
             # variable display mutators, wrap these in htmlentities as necessary
             '/(\s*)@json\s*\((.*?)\)/i' => '$1<?php echo json_encode($2); ?>',
             '/(\s*)@lower\s*\((.*?)\)/i' => '$1<?php echo htmlentities(strtolower($2)); ?>',

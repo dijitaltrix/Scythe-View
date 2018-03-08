@@ -71,6 +71,8 @@ $output = $view->render(new Response(), "/path/to/template.blade.php", $data);
 
 `{!! $name !!}`
 
+### echo with a default
+`{{ $name or 'Anonymous' }}`
 
 ### set
 ```php
@@ -123,20 +125,20 @@ Twig has some really nice string modifiers, we have these ;)
 
 ### wrap
 ```php
-@wrap("This is a really long line that should wrap somewhere otherwise it may break the internet into pieces!")
+@wrap("This is a really long line that should wrap somewhere otherwise it may shatter the internet into pieces!")
 <!-- 
 This is a really long line that should wrap somewhere otherwise it may
-break the internet into pieces!
+shatter the internet into pieces!
 -->
 
 <!-- With an optional limit -->
-@wrap("This is a really long line that should wrap somewhere otherwise it may break the internet into pieces!", 25)
+@wrap("This is a really long line that should wrap somewhere otherwise it may shatter the internet into pieces!", 25)
 
 <!--
 This is a really long
 line that should wrap 
 somewhere otherwise
-it may break the
+it may shatter the
 internet into pieces!
 -->
 ```
