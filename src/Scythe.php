@@ -253,6 +253,8 @@ class Scythe
             '/(\s*)@upper\s*\((.*?)\)/i' => '$1<?php echo htmlentities(strtoupper($2)); ?>',
             '/(\s*)@ucfirst\s*\((.*?)\)/i' => '$1<?php echo htmlentities(ucfirst(strtolower($2))); ?>',
             '/(\s*)@ucwords\s*\((.*?)\)/i' => '$1<?php echo htmlentities(ucwords(strtolower($2))); ?>',
+            '/(\s*)@format\s*\((.*?)\)/i' => '$1<?php echo htmlentities(sprintf($2)); ?>',
+            
             
             # wordwrap has multiple parameters
             '/(\s*)@wrap\s*\((.*?)\)/i' => '$1<?php echo htmlentities(wordwrap($2)); ?>',
