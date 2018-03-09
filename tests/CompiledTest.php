@@ -19,57 +19,11 @@ class CompiledTest extends \PHPUnit\Framework\TestCase
     public function getRenderer($settings=[])
     {
         return new \Slim\Views\Scythe(array_merge([
-            'views_path' => 'tests/compiled',
-            'cache_path' => 'tests/compiled/cache',
+            'views_path' => 'tests/rendered',
+            'cache_path' => 'tests/rendered/cache',
         ], $settings));
     }
-    
-    /**
-     * Get a complete response
-     *
-     * @param string $template 
-     * @param array $payload 
-     * @param array $settings 
-     * @return Response
-     */
-    public function getResponse($template, $payload=[], $settings=[])
-    {
-        $scythe = $this->getRenderer($settings);
 
-        $response = $scythe->render(
-            new Response(
-                200,
-                new Headers(), 
-                new Body(fopen('php://temp', 'r+'))
-            ), 
-            $template,
-            $payload
-        );
-
-        $response->getBody()->rewind();
-
-        return $response;
-        
-    }
-    
-    /**
-     * Get only the response body
-     *
-     * @param string $template 
-     * @param array $payload 
-     * @param array $settings 
-     * @return strong
-     */
-    public function getBody($template, $payload=[], $settings=[])
-    {
-        $response = $this->getResponse('hello', [
-            'name' => 'World'
-        ]);
-
-        return $response->getBody()->getContents(); 
-        
-    }
-    
     /**
      * Get the compiled (cached) template as string
      *
@@ -80,14 +34,14 @@ class CompiledTest extends \PHPUnit\Framework\TestCase
      */
     public function getCompiled($template, $settings=[]) 
     {
-        $scythe = $this->getRenderer($settings);
-        return $scythe->getCompiled($template);
+        $view = $this->getRenderer($settings);
+        return $view->getCompiled($template);
 
     }
     
     public function testCompiledControlStructures()
     {
-        $scythe = $this->getRenderer();
+        $view = $this->getRenderer();
         
         $folder = './tests/compiled/control';
         // loop through each file in control structures
@@ -104,7 +58,7 @@ class CompiledTest extends \PHPUnit\Framework\TestCase
             $blade = $this->getBlade($content);
             $expected = $this->getExpected($content);
             // compile to string, but do not render (populated with vars)
-            $out = $scythe->compileString($blade);
+            $out = $view->compileString($blade);
 
             $this->assertEquals($expected, trim($out));
             
@@ -114,7 +68,7 @@ class CompiledTest extends \PHPUnit\Framework\TestCase
 
     public function testCompiledVariables()
     {
-        $scythe = $this->getRenderer();
+        $view = $this->getRenderer();
         
         $folder = './tests/compiled/variables';
         // loop through each file in control structures
@@ -131,7 +85,7 @@ class CompiledTest extends \PHPUnit\Framework\TestCase
             $blade = $this->getBlade($content);
             $expected = $this->getExpected($content);
             // compile to string, but do not render (populated with vars)
-            $out = $scythe->compileString($blade);
+            $out = $view->compileString($blade);
 
             $this->assertEquals($expected, trim($out));
             

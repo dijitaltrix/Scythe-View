@@ -34,9 +34,9 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
      */
     public function getResponse($template, $payload=[], $settings=[])
     {
-        $scythe = $this->getRenderer($settings);
+        $view = $this->getRenderer($settings);
 
-        $response = $scythe->render(
+        $response = $view->render(
             new Response(
                 200,
                 new Headers(), 
@@ -53,32 +53,26 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
     }
     
     /**
-     * Get only the response body
+     * Get only the response body content
      *
      * @param string $template 
      * @param array $payload 
      * @param array $settings 
      * @return strong
      */
-    public function getBody($template, $payload=[], $settings=[])
+    public function getBodyContents($response)
     {
-        $response = $this->getResponse('hello', [
-            'name' => 'World'
-        ], $settings);
-
         return $response->getBody()->getContents(); 
-        
     }
-
-    public function testResponse()
+    
+    
+    public function testHelloWorld()
     {
-        $response = $this->getResponse("hello", [
-            'name' => 'world',
-        ]);
+        $payload = ['name' => 'world'];
         
-        $this->assertInstanceOf(Response::class, $response);
+        $response = $this->getResponse('hello', $payload);
         
-        $out = $response->getBody()->getContents();
+        $out = $this->getBodyContents($response);
         
         $expected = '<h1>Hello world</h1>';
         
@@ -86,6 +80,20 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         
     }
     
+    public function testExtends()
+    {
+        $template = 'inheritance/child';
+        $response = $this->getResponse($template);
+        
+        $out = $this->getBodyContents($response);
+        
+        $expected = file_get_contents("tests/rendered/expected/$template.php");
+        
+        $this->assertEquals($expected, trim($out));
+        
+    }
+    
+    /*
     public function testNamespacePassedInConstructor()
     {
         $payload = [
@@ -151,38 +159,13 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($expected, trim($out));
         
     }
+    */
     
     // test cache is invalidated when template timestamp updated
     
     // test everything on one page to ensure it's not clobbered
     
-    /**
-     * Returns the blade part of a test template
-     *
-     * @param string $str 
-     * @return string
-     */
-    private function getBlade($str)
-    {
-        return preg_replace("/^{{--(.*)--}}/ms", "", $str);
-    }
-    
-    /**
-     * Returns the expected output part of a test template
-     * the lines between {{-- Expected\n and \n--}}
-     * @param string $str 
-     * @return string
-     */
-    private function getExpected($str)
-    {
-        preg_match("/^{{--\sExpected(.*)--}}/ms", $str, $matches);
-        if (isset($matches[1])) {
-            return trim($matches[1]);
-        }
-        
-        throw new Exception("Cannot find expected output in test, did you add it?");
 
-    }
     
 
 }

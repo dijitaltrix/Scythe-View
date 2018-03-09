@@ -124,6 +124,16 @@ class Scythe
             $this->addNamespace($name, $path);
         }
     }
+    
+    /**
+     * Returns defined namespaces as array
+     *
+     * @return array
+     */
+    public function getNamespaces()
+    {
+        return $this->namespaces;
+    }
 
     /**
      * Set directives
@@ -157,7 +167,7 @@ class Scythe
     public function addNamespace($name, $path)
     {
         if ( ! is_dir($path)) {
-            throw new Exception("Cannot find namespace path at '$path'");
+            throw new Exception("Renderer cannot find namespace path at '$path'");
         } 
         if ( ! is_readable($path)) {
             throw new Exception("Renderer cannot read from namespace views at '$path'");
@@ -180,7 +190,6 @@ class Scythe
         return ($this->getTemplateFilepath($template) === false) ? false : true;
         
     }
-    
 
     /**
      * Render a template
@@ -202,8 +211,6 @@ class Scythe
         
         // populate compiled template with data
         $out = $this->populate($template, $data);
-        
-        var_dump($out);
         
         // add to response
         $response->getBody()->write($out);
@@ -345,7 +352,6 @@ class Scythe
         return preg_replace(array_keys($this->getReplacements()), array_values($this->getReplacements()), $str);
     }
 
-
     /**
      * Returns an array of blade placeholders with their php substitutions
      * These are simple preg swaps
@@ -440,7 +446,12 @@ class Scythe
         
     }
 
-
+    /**
+     * Returns the namespace name part of the template path
+     *
+     * @param string $template 
+     * @return string
+     */
     private function getNamespaceName($template)
     {
         $parts = explode('::', $template);
@@ -512,6 +523,12 @@ class Scythe
         return false;
     }
 
+    /**
+     * Returns the path to the compiled version of $template in the cache
+     *
+     * @param string $template
+     * @return string
+     */
     private function getCompiledFilepath($template)
     {
         return $this->cache_path.'/'.md5($template);
@@ -536,10 +553,18 @@ class Scythe
         
     }
     
+    /** TODO exceptions
+     * Stores the cmpiled template in the cache folder
+     *
+     * @param string $template 
+     * @param string $contents 
+     * @return boolean
+     */
     private function storeCompiled($template, $contents)
     {
         $filepath = $this->getCompiledFilepath($template);
         return file_put_contents($filepath, $contents);
+
     }
     
     /**
@@ -551,7 +576,6 @@ class Scythe
     private function getContents($path)
     {
         return file_get_contents($path);
-    }
-    
+    }  
 
 }
