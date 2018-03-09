@@ -64,12 +64,12 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
     {
         $response = $this->getResponse('hello', [
             'name' => 'World'
-        ]);
+        ], $settings);
 
         return $response->getBody()->getContents(); 
         
     }
-    
+
     public function testResponse()
     {
         $response = $this->getResponse("hello", [
@@ -81,6 +81,72 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         $out = $response->getBody()->getContents();
         
         $expected = '<h1>Hello world</h1>';
+        
+        $this->assertEquals($expected, trim($out));
+        
+    }
+    
+    public function testNamespacePassedInConstructor()
+    {
+        $payload = [
+            'muppets' => (object) [
+                (object) ['name' => 'Kermit'],
+                (object) ['name' => 'Miss Piggy'],
+                (object) ['name' => 'Fozzy Bear'],
+            ]
+        ];
+        $settings = [
+            'namespaces' => [
+                'muppets' => 'tests/namespaces/muppets/',
+            ],
+        ];
+
+        $response = $this->getResponse("muppets::cast/list", $payload, $settings);
+        
+        $this->assertInstanceOf(Response::class, $response);
+        
+        $out = $response->getBody()->getContents();
+        
+        $expected = '<h1>Muppets cast list</h1>
+<ul>
+    <li>Kermit</li>
+    <li>Miss Piggy</li>
+    <li>Fozzy Bear</li>
+</ul>';
+        
+        $this->assertEquals($expected, trim($out));
+        
+    }
+
+    public function testNamespaceAddMethod()
+    {
+        $payload = [
+            'muppets' => (object) [
+                (object) ['name' => 'Kermit'],
+                (object) ['name' => 'Miss Piggy'],
+                (object) ['name' => 'Fozzy Bear'],
+            ]
+        ];
+        
+        $view = new \Slim\Views\Scythe([
+            'views_path' => 'tests/rendered',
+            'cache_path' => 'tests/rendered/cache',
+        ]);
+        $view->addNamespace('muppets', 'tests/namespaces/muppets/');
+
+        $response = $view->render(new Response, "muppets::cast/list", $payload);
+        $response->getBody()->rewind();
+        
+        $this->assertInstanceOf(Response::class, $response);
+        
+        $out = $response->getBody()->getContents();
+ 
+        $expected = '<h1>Muppets cast list</h1>
+<ul>
+    <li>Kermit</li>
+    <li>Miss Piggy</li>
+    <li>Fozzy Bear</li>
+</ul>';
         
         $this->assertEquals($expected, trim($out));
         

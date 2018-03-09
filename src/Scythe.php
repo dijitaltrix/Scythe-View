@@ -59,26 +59,17 @@ class Scythe
      */
     public function __construct($settings=[])
     {
-        //TODO move these into attributes so they don't get clobbered
         $settings = array_merge([
             'views_path' => null,
             'cache_path' => null,
             'namespaces' => [],
-            'directives' => []
+            'directives' => [],
         ], $settings);
-        
-        foreach ($settings as $k=>$v) {
-            if (property_exists($this, $k)) {
-                $this->$k = $v;
-            }
-        }
-        
-        // normalise view paths
-        $this->views_path = rtrim($this->views_path, '/');
-        $this->cache_path = rtrim($this->cache_path, '/');
-        
-        //TODO disallow setting this in settings above
-        $this->_build = [];
+
+        $this->setViewsPath($settings['views_path']);
+        $this->setCachePath($settings['cache_path']);
+        $this->setNamespaces($settings['namespaces']);
+        $this->setDirectives($settings['directives']);
         
     }
     
@@ -87,6 +78,109 @@ class Scythe
      * setNamespace
      * setDirective
     **/
+    
+    /**
+     * Set views_path
+     * @param string $path 
+     * @throws Exception if path does not exist or is not readable
+     */
+    public function setViewsPath($path)
+    {
+        if ( ! is_dir($path)) {
+            throw new Exception("Renderer cannot find view path at '$path'");
+        }
+        if ( ! is_readable($path)) {
+            throw new Exception("Renderer cannot read from views at '$path'");
+        }
+        
+        $this->views_path = rtrim($path, '/');
+
+    }
+
+    /**
+     * Set cache_path
+     * @param string $path 
+     * @throws Exception if path does not exist or is not writeable
+     */
+    public function setCachePath($path)
+    {
+        if ( ! is_dir($path)) {
+            throw new Exception("Renderer cannot find cache path at '$path'");
+        }
+        if ( ! is_readable($path) OR  ! is_writeable($path)) {
+            throw new Exception("Renderer cannot read or write from cache at '$path', please set permissions to 0775");
+        }
+
+        $this->cache_path = rtrim($path, '/');
+    }
+    
+    /**
+     * Set namespaces
+     * @param array $namespaces 
+     */
+    public function setNamespaces(array $namespaces)
+    {
+        foreach ($namespaces as $name=>$path) {
+            $this->addNamespace($name, $path);
+        }
+    }
+
+    /**
+     * Set directives
+     * @param array $directives 
+     */
+    public function setDirectives(array $directives)
+    {
+        foreach ($directives as $match=>$callable) {
+            $this->addDirective($match, $callable);
+        }
+    }
+    
+    /** TODO
+     * Add a user defined directive
+     *
+     * @param string $name 
+     * @param callable $callback 
+     * @return void
+     */
+    public function addDirective($name, $callback)
+    {
+    }
+
+    /**
+     * Add a view namespace
+     *
+     * @param string $name
+     * @param string $folder 
+     * @return void
+     */
+    public function addNamespace($name, $path)
+    {
+        if ( ! is_dir($path)) {
+            throw new Exception("Cannot find namespace path at '$path'");
+        } 
+        if ( ! is_readable($path)) {
+            throw new Exception("Renderer cannot read from namespace views at '$path'");
+        }
+        
+        $this->namespaces[$name] = $path;
+        
+    }
+
+    /**
+     * Check that $template exists in the view path or
+     * any namespaced paths
+     *
+     * @param string $template 
+     * @return boolean
+     * @author Ian Grindley
+     */
+    public function exists($template)
+    {
+        return ($this->getTemplateFilepath($template) === false) ? false : true;
+        
+    }
+    
 
     /**
      * Render a template
@@ -109,6 +203,8 @@ class Scythe
         // populate compiled template with data
         $out = $this->populate($template, $data);
         
+        var_dump($out);
+        
         // add to response
         $response->getBody()->write($out);
 
@@ -129,20 +225,6 @@ class Scythe
 
         return $this->populateCompiledString($view, $data);
     
-    }
-    
-    /**
-     * Check that $template exists in the view path or
-     * any namespaced paths
-     *
-     * @param string $template 
-     * @return boolean
-     * @author Ian Grindley
-     */
-    public function exists($template)
-    {
-        return ($this->getTemplateFilepath($template) === false) ? false : true;
-        
     }
     
     /**
@@ -358,21 +440,39 @@ class Scythe
         
     }
 
+
+    private function getNamespaceName($template)
+    {
+        $parts = explode('::', $template);
+
+        return $parts[0];
+
+    }
+
     /**
-     * undocumented function
+     * Returns the path to $template.blade.php if it is found
+     * in the curent view path or user defined namespace(s) 
      *
      * @param string $template 
-     * @return void
+     * @return string or false
      * @author Ian Grindley
      */
     private function getTemplateFilepath($template)
     {
-        $filepath = sprintf("%s/%s%s", $this->views_path, ltrim($template, '/'), '.blade.php');
+        if (strpos($template, '::')) {
+            $name = $this->getNamespaceName($template);
+            if ( ! isset($this->namespaces[$name])) {
+                throw new Exception("View namespace '$name' is not defined, please define it with addNamespace()");
+            }
+            $filepath = sprintf("%s/%s%s", $this->namespaces[$name], ltrim(str_replace("$name::", "", $template), '/'), '.blade.php');
+
+        } else {
+            $filepath = sprintf("%s/%s%s", $this->views_path, ltrim($template, '/'), '.blade.php');
+        }
+        
         if (file_exists($filepath)) {
             return $filepath;
         }
-        
-        // loop through namespaces
         
         return false;
         
@@ -398,7 +498,7 @@ class Scythe
 
     }
 
-    /**
+    /** TODO
      * Check for a compiled version of $template in the cache
      * Optionally compare timestamps to determine if cache is stale
      *
