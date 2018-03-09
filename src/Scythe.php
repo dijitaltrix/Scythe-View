@@ -1,7 +1,7 @@
 <?php
 /**
  * Scythe Renderer
- * A clean implementation of Laravel Blade for rendering blade views into a PSR-7 Response object.
+ * A simple implementation of Laravel Blade for rendering blade views into a PSR-7 Response object.
  * With no dependencies it works well with Slim Framework 3.
  *
  * NB: Not all Laravel Blade features are supported
@@ -21,31 +21,31 @@ use Psr\Http\Message\ResponseInterface;
 class Scythe
 {
     /**
-     * Location of the views folder 
+     * Location of the views folder
      * @var string
      */
     protected $views_path;
 
     /**
-     * Location of the cache folder 
+     * Location of the cache folder
      * @var string
      */
     protected $cache_path;
-    
+
     /**
-     * Holds user defined namespaces 
+     * Holds user defined namespaces
      * @var array
      */
     protected $namespaces;
 
     /**
-     * Holds user defined directives 
+     * Holds user defined directives
      * @var array
      */
     protected $directives;
 
     /**
-     * Holds contents during template construction 
+     * Holds contents during template construction
      * @var array
      */
     private $_build;
@@ -70,18 +70,14 @@ class Scythe
         $this->setCachePath($settings['cache_path']);
         $this->setNamespaces($settings['namespaces']);
         $this->setDirectives($settings['directives']);
-        
+
+        $this->_build = [];
+
     }
-    
-    /**
-     * //TODO getters and setters
-     * setNamespace
-     * setDirective
-    **/
-    
+
     /**
      * Set views_path
-     * @param string $path 
+     * @param string $path
      * @throws Exception if path does not exist or is not readable
      */
     public function setViewsPath($path)
@@ -92,14 +88,14 @@ class Scythe
         if ( ! is_readable($path)) {
             throw new Exception("Renderer cannot read from views at '$path'");
         }
-        
+
         $this->views_path = rtrim($path, '/');
 
     }
 
     /**
      * Set cache_path
-     * @param string $path 
+     * @param string $path
      * @throws Exception if path does not exist or is not writeable
      */
     public function setCachePath($path)
@@ -113,10 +109,10 @@ class Scythe
 
         $this->cache_path = rtrim($path, '/');
     }
-    
+
     /**
      * Set namespaces
-     * @param array $namespaces 
+     * @param array $namespaces
      */
     public function setNamespaces(array $namespaces)
     {
@@ -124,7 +120,7 @@ class Scythe
             $this->addNamespace($name, $path);
         }
     }
-    
+
     /**
      * Returns defined namespaces as array
      *
@@ -137,7 +133,7 @@ class Scythe
 
     /**
      * Set directives
-     * @param array $directives 
+     * @param array $directives
      */
     public function setDirectives(array $directives)
     {
@@ -145,50 +141,50 @@ class Scythe
             $this->addDirective($match, $callable);
         }
     }
-    
+
     /** TODO
      * Add a user defined directive
      *
-     * @param string $name 
-     * @param callable $callback 
+     * @param string $match
+     * @param callable $callback
      * @return void
      */
-    public function addDirective($name, $callback)
+    public function addDirective($match, $callback)
     {
+        $this->directives[$name] = $callback;
     }
 
     /**
      * Add a view namespace
      *
      * @param string $name
-     * @param string $folder 
+     * @param string $folder
      * @return void
      */
     public function addNamespace($name, $path)
     {
         if ( ! is_dir($path)) {
             throw new Exception("Renderer cannot find namespace path at '$path'");
-        } 
+        }
         if ( ! is_readable($path)) {
             throw new Exception("Renderer cannot read from namespace views at '$path'");
         }
-        
+
         $this->namespaces[$name] = $path;
-        
+
     }
 
     /**
      * Check that $template exists in the view path or
      * any namespaced paths
      *
-     * @param string $template 
+     * @param string $template
      * @return boolean
-     * @author Ian Grindley
      */
     public function exists($template)
     {
         return ($this->getTemplateFilepath($template) === false) ? false : true;
-        
+
     }
 
     /**
@@ -208,10 +204,12 @@ class Scythe
 
         // compile template and dependencies as required
         $this->compile($template);
-        
+
         // populate compiled template with data
         $out = $this->populate($template, $data);
-        
+
+        $this->reset();
+
         // add to response
         $response->getBody()->write($out);
 
@@ -228,19 +226,21 @@ class Scythe
      */
     public function renderString($blade, array $data = [])
     {
-        $view = $this->compileString($blade);
+        $out = $this->compileString($blade);
 
-        return $this->populateCompiledString($view, $data);
-    
+        $this->reset();
+
+        return $this->populateCompiledString($out, $data);
+
     }
-    
+
     /**
      * Checks for a compiled version of the $template file
      * If cache version does not exist or is stale
      * it will compile the template and it's dependencies
      * then store it in cache
      *
-     * @param string $template 
+     * @param string $template
      * @return boolean
      */
     private function compile($template)
@@ -253,14 +253,14 @@ class Scythe
             // store compiled template in cache
             $this->storeCompiled($template, $str);
         }
-        
+
     }
-    
+
     /**
      * Populate a compiled template with $data
      *
-     * @param string $str 
-     * @param array $data 
+     * @param string $str
+     * @param array $data
      * @return string
      */
     private function populate($template, $data)
@@ -271,28 +271,31 @@ class Scythe
     /**
      * Compile any blade syntax in $str to plain php
      * Returns a plain php file, ready to be populated with data
-     * 
+     *
      * NB This method must be public to allow renderer unit testing
      *
-     * @param string $str 
+     * @param string $str
      * @return string
      */
     public function compileString($str)
     {
-        $str = $this->handleSections($str);
-        $str = $this->handleExtends($str);
+        // while this has directives
+        if (substr($str, 0, 9) == '@extends(') {
+            $str = $this->handleExtends($str);
+        }
+        $str = $this->handleIncludes($str);
         $str = $this->convertPlaceholders($str);
         $str = $this->handleDirectives($str);
-        
+
         return $str;
-    
+
     }
-    
+
     /**
      * Populate a compiled (plain php) string with $data
      *
-     * @param string $str 
-     * @param array $data 
+     * @param string $str
+     * @param array $data
      * @return string
      */
     private function populateCompiledString($str, $data=[])
@@ -306,11 +309,21 @@ class Scythe
         return $out;
 
     }
-    
+
+    /**
+     * Reset the build area
+     *
+     * @return void
+     */
+    private function reset()
+    {
+        $this->_build = [];
+    }
+
     /** TODO
      * Converts blade user directives to plain php
      *
-     * @param string $str 
+     * @param string $str
      * @return string
      */
     private function handleDirectives($str)
@@ -318,33 +331,143 @@ class Scythe
         return $str;
     }
 
-    /** TODO
+    /**
      * Handles extends
      *
-     * @param string $str 
+     * @param string $str
      * @return string
      */
     private function handleExtends($str)
     {
+        // capture section(name, value) placeholders
+		foreach ($this->getMatches('/\([(\'|\")]([a-z]+)[(\'|\")]\s*,\s*[(\'|\")]([[:print:]]+)[(\'|\")]\)/i', $str) as $section) {
+            $this->addSection($section);
+		}
+
+		# capture section(name) placeholders
+		foreach ($this->getMatches('/\@section\(\s*[\'|\"]([a-z0-9\-\_\.]+)[\'|\"]\s*\)\s*(.*)\s*\@endsection/sU', $str) as $section) {
+            $this->addSection($section);
+		}
+
+		# load compiled parent template
+		foreach ($this->getMatches('/\@extends\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
+			$str = $this->getCompiledContents($match);
+		}
+
+		# merge child sections into parent
+		foreach ($this->getSections() as $name => $content) {
+			$str = $this->replaceSection($str, $name, $content);
+        }
+
         return $str;
+
     }
-    
-    /** TODO
-     * Handles sections
+
+    /**
+     * Handles includes
      *
-     * @param string $str 
+     * @param string $str
      * @return string
      */
-    private function handleSections($str)
+    private function handleIncludes($str)
     {
+		foreach ($this->getMatches('/\@include\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/im', $str) as $match) {
+			$str = $this->replaceTag(sprintf("@include('%s')", $match), $this->getCompiledContents($match), $str);
+		}
+
         return $str;
     }
+
+    /**
+     * Returns matches from $content between the tags in $expr
+     *
+     * @param string $expr
+     * @param string $content
+     * @return array
+     */
+    function getMatches($expr, $str)
+    {
+        $out = [];
+        preg_match_all($expr, $str, $matches, PREG_SET_ORDER);
+        foreach ($matches as $match) {
+            if (count($match) == 2) {
+                $out[] = $match[1];
+            } elseif (count($match) == 3) {
+                $out[] = [$match[1], $match[2]];
+            }
+        }
+
+        return $out;
+
+    }
+
+    /**
+     * Swaps content in a string
+     *
+     * @param string $expr
+     * @param string $replace
+     * @param string $content
+     * @return string
+     */
+	private function replaceTag($expr, $replace, $content)
+	{
+		return str_replace($expr, $replace, $content);
+	}
+
+    /**
+     * Returns the sections stored in the build area
+     *
+     * @return array
+     */
+	private function getSections()
+	{
+        if (isset($this->_build['sections'])) {
+            return $this->_build['sections'];
+        }
+
+        return [];
+
+	}
+
+    /**
+     * Add content to the build area for insertion into a parent
+     * template
+     *
+     * @param array $section
+     * @return void
+     */
+	private function addSection($section)
+	{
+        list($name, $str) = $section;
+		$this->_build['sections'][$name] = $this->compileString($str);
+
+	}
+
+    /**
+     * Swaps out an entire section of the template
+     *
+     * @param string $name
+     * @param string $replace
+     * @param string $content
+     * @return string
+     */
+	private function replaceSection($str, $name, $replace)
+	{
+        $match = [
+            "/\@section\(\'$name\'\)(.*?)\@(stop|show|endsection)/is",
+            "/\@yield\(\'$name\'\)/is",
+        ];
+		$str = preg_replace($match, $replace, $str);
+
+        return $str;
+
+	}
 
     /**
      * Replaces blade placholders with their php equivalents
      * the bulk of the conversion is done here
      *
-     * @param string $str 
+     * @param string $str
      * @return string
      */
     private function convertPlaceholders($str)
@@ -361,14 +484,14 @@ class Scythe
     private function getReplacements()
     {
         return [
-            
+
 			# remove blade comments
 			'/(\s*){{--\s*(.+?)\s*--}}/i' => '$1',
 
 			# echo with a default
 			'/(\s*){{\s*(.+?)\s*or\s*(.+?)\s*}}/i' => '$1<?php echo (isset($2)) ? htmlentities($2) : $3; ?>',
 
-			# echo an escaped variable 
+			# echo an escaped variable
 			'/(\s*){{\s*(.+?)\s*}}/i' => '$1<?php echo htmlentities($2); ?>',
 
 			# echo an unescaped variable
@@ -380,9 +503,9 @@ class Scythe
             '/(\s*)@upper\s*\((.*?)\)/i' => '$1<?php echo htmlentities(strtoupper($2)); ?>',
             '/(\s*)@ucfirst\s*\((.*?)\)/i' => '$1<?php echo htmlentities(ucfirst(strtolower($2))); ?>',
             '/(\s*)@ucwords\s*\((.*?)\)/i' => '$1<?php echo htmlentities(ucwords(strtolower($2))); ?>',
-            '/(\s*)@format\s*\((.*?)\)/i' => '$1<?php echo htmlentities(sprintf($2)); ?>',
-            
-            
+            '/(\s*)@(format|sprintf)\s*\((.*?)\)/i' => '$1<?php echo htmlentities(sprintf($3)); ?>',
+
+
             # wordwrap has multiple parameters
             '/(\s*)@wrap\s*\((.*?)\)/i' => '$1<?php echo htmlentities(wordwrap($2)); ?>',
             '/(\s*)@wrap\s*\((.*?)\s*,\s*(.*?)\)/i' => '$1<?php echo htmlentities(wordwrap($2, $3)); ?>',
@@ -395,7 +518,7 @@ class Scythe
             # isset statement
 			'/(\s*)@isset\s*\((.*?)\)/i' => '$1<?php if (isset($2)): ?>',
 			'/(\s*)@endisset(\s*)/i' => '$1<?php endif; ?>',
-                        
+
             # has statement
 			'/(\s*)@has\s*\((.*?)\)/i' => '$1<?php if (isset($2) && ! empty($2)): ?>',
 			'/(\s*)@endhas(\s*)/i' => '$1<?php endif; ?>',
@@ -403,6 +526,11 @@ class Scythe
 			# handle special unless statement
 			'/(\s*)@unless\s*\((.+?)\)/i' => '$1<?php if ( ! $2): ?>',
 			'/(\s*)@endunless(\s*)/i' => '$1<?php endif; ?>',
+
+            # each statements
+            # eachelse matches first
+            '/(\s*)@each\s*\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")],\s*(.*)\s*\)/i' => "$1@forelse ($3 as \$$4)\n@include($2)\n@empty\n@include($5)\n@endforelse",
+            '/(\s*)@each\s*\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")]\s*\)/i' => "$1<?php foreach ($3 as \$$4): ?>\n@include($2)\n<?php endforeach; ?>",
             
             # switch statement
             '/(\s*)@switch\s*\((.*?)\)/i' => '$1<?php switch ($2): ?>',
@@ -419,37 +547,37 @@ class Scythe
 			'/(?(R)\((?:[^\(\)]|(?R))*\)|(?<!\w)(\s*)@(if|elseif|foreach|for|while)(\s*(?R)+))/i' => '$1<?php $2$3: ?>$4',
 			'/(\s*)@(else)(\s*)/i' => '$1<?php else: ?>$3',
 			'/(\s*)@(endif|endforeach|endfor|endwhile)(\s*)/' => '$1<?php $2; ?>$3',
-            
+
             # swap out @php and @endphp
 			'/(\s*)@php(\s*)/i' => '$1<?php',
 			'/(\s*)@endphp(\s*)/i' => '$1?>',
-			
+
         ];
-        
+
     }
 
     /**
      * Render php code from string using data and return as String
      *
-     * @param string $str 
-     * @param array $data 
+     * @param string $str
+     * @param array $data
      * @return string
      */
     private function processInIsolation($filepath, $data=[])
     {
         ob_start();
-        
+
         extract($data);
         include $filepath;
 
         return ob_get_clean();
-        
+
     }
 
     /**
      * Returns the namespace name part of the template path
      *
-     * @param string $template 
+     * @param string $template
      * @return string
      */
     private function getNamespaceName($template)
@@ -462,11 +590,10 @@ class Scythe
 
     /**
      * Returns the path to $template.blade.php if it is found
-     * in the curent view path or user defined namespace(s) 
+     * in the curent view path or user defined namespace(s)
      *
-     * @param string $template 
+     * @param string $template
      * @return string or false
-     * @author Ian Grindley
      */
     private function getTemplateFilepath($template)
     {
@@ -480,20 +607,20 @@ class Scythe
         } else {
             $filepath = sprintf("%s/%s%s", $this->views_path, ltrim($template, '/'), '.blade.php');
         }
-        
+
         if (file_exists($filepath)) {
             return $filepath;
         }
-        
+
         return false;
-        
+
     }
 
     /**
      * Returns the contents of the $template file
      * searches views folder and all namespaces
      *
-     * @param string $template 
+     * @param string $template
      * @return string
      */
     private function getTemplateContents($template)
@@ -504,19 +631,18 @@ class Scythe
         {
             return $this->getContents($this->getTemplateFilepath($template));
         }
-        
+
         throw new Exception("Cannot find template '$template'");
 
     }
 
-    /** TODO
+    /** TODO check template is compiled and not stale
      * Check for a compiled version of $template in the cache
      * Optionally compare timestamps to determine if cache is stale
      *
-     * @param string $template 
+     * @param string $template
      * @param string $check_timestamps
      * @return boolean
-     * @author Ian Grindley
      */
     private function isCompiled($template, $check_timestamps=false)
     {
@@ -535,29 +661,30 @@ class Scythe
     }
 
     /**
-     * Returns the contents of the compiled $template 
+     * Returns the contents of the compiled $template
      * file from the cache folder
      *
-     * @param string $template 
+     * @param string $template
      * @return string or boolean false
      */
     private function getCompiledContents($template)
     {
+        $this->compile($template);
         $filepath = $this->getCompiledFilepath($template);
         if (file_exists($filepath))
         {
             return $this->getContents($filepath);
         }
-        
+
         return false;
-        
+
     }
-    
+
     /** TODO exceptions
      * Stores the cmpiled template in the cache folder
      *
-     * @param string $template 
-     * @param string $contents 
+     * @param string $template
+     * @param string $contents
      * @return boolean
      */
     private function storeCompiled($template, $contents)
@@ -566,16 +693,16 @@ class Scythe
         return file_put_contents($filepath, $contents);
 
     }
-    
+
     /**
      * Returns the contents of the file at $path
      *
-     * @param string $path 
+     * @param string $path
      * @return string
      */
     private function getContents($path)
     {
         return file_get_contents($path);
-    }  
+    }
 
 }

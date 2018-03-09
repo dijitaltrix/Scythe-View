@@ -283,25 +283,64 @@ If NOT something, then what?
 ```
 
 ### each
-To be implemented
+A more compact version of the foreach loop that adds the @include command
+```php
+@each('muppets/profile', $muppets, 'muppet')
 
+// @foreach ($muppets as $muppet)
+//   @include('muppets/profile')
+// @endforeach
+```
+It also supports the generation of the forelse structure if you pass a view to display when there are no records
+```php
+@each('muppets/profile', $muppets, 'muppet', 'muppets/profile-missing')
+
+// @forelse ($muppets as $muppet)
+//   @include('muppets/profile')
+// @empty
+//   @include('muppets/profile-missing')
+// @endforelse
+
+```
 
 ## Inheritance
 
-### extend
-Not yet implemented
+### extends
+Calls a parent template to insert sections into
+```html
+@extends('muppets/cast/list')
+```
 
 ### section
-Not yet implemented
+Sections define areas of content to be inserted into a parent template
+```html
+@section('title', 'Muppets cast listing')
+
+@section('head')
+<h1>Muppets cast listing</h1>
+@endsection
+```
 
 #### parent
-Not yet implemented (yawn)
+Not yet implemented
 
 ### yield
-Not yet implemented
+```html
+<title>@yield('title')</title>
+<!-- <title>Muppets cast listing</title> -->
+```
 
 ### include
-Not yet implemented
+Include another blade template, all variables will be available to the included template
+```php
+@section('body')
+<ul>
+@foreach ($muppets as $muppet)
+    @include('muppets/cast/member')
+@endforeach
+</ul>
+@endsection
+```
 
 
 ## Directives
@@ -318,41 +357,60 @@ To be implemented
 
 In addition to the Blade syntax, the renderer instance offers the following methods
 
-### Check that a template file exists in the view path
-The `exists()` function will return `true` if the template file is in the view path, or `false` if not. 
-```php
-$this->view->exists('admin/dashboard')
+### addDirective($placeholder, $callback)
 
-// Namespaces are specified as follows
-$this->view->exists('admin::user/dashboard')
+```php
+$view->addDirective('@rand', function() {
+    if (rand(1,10) > 5) {
+        throw new Exception("This is pointless");
+    }
+});
+
 ```
 
-### Add namespaces
-Add the namespace definition to the constructor, or elsewhere in your app using the `addNamespace` method.
-It takes two arguments, the first is the namespace, the second is the root path of the namespace.
+### addNamespace($name, $path)
+Namespaces allow you to add view paths outside the default views_path. 
+Use them for external packages or to help organise your code into modules. 
 
 ```php
 // add the namespace name first, followed by the path to the root of the namespace
-$this->view->addNamespace("admin", "/src/Admin/views");
+$view->addNamespace("admin", "/src/Admin/views");
 
 // namespaces are referenced with '::'
 // for example
-$this->view->exists('admin::user/dashboard');
+$view->exists('admin::user/dashboard');
 
 // this will load the file at src/Admin/views/user/profile.blade.php
-$this->view->render($response, 'admin::user/profile', $args);
+$view->render($response, 'admin::user/profile', $args);
 
 ```
 
+### exists($template)
+The `exists()` function will return `true` if the template file is in the view path, or `false` if not. 
+```php
+$view->exists('admin/dashboard')
 
-addDirective($placeholder, $callback)
+// Namespaces are specified as follows
+$view->exists('admin::user/dashboard')
+```
 
+### renderString($string, $data=[])
+The `renderString()` function will parse a string converting any blade commands . 
+```php
+$blade = "<h1>{{ $title }}</h1>";
+
+$view->renderString($blade, ['title'=>'The Muppet Show']);
+
+// <h1>The Muppet Show</h1>
+
+```
 
 
 # To do or not to do
 ### @inject
-This will probably not be implemented. It's not good practice to allow the view to pull in whatever it likes. 
+This will probably not be implemented I feel it's too easy to abuse and it's not good practice to allow the view to pull in whatever it likes. 
 Data and dependencies should be generated in the 'Domain' and injected into the view so the view should already have eveyrthing it needs.
+As the template renders down to plain php you are of course able to execute in any code you like.
 
 ### The loop variable
 It is possible to get the loop variable working for a single loop, however it would would be shared in nested loops and strange results would ensue.

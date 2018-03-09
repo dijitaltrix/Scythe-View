@@ -79,18 +79,31 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($expected, trim($out));
         
     }
-    
-    public function testExtends()
+
+    public function testInclude()
     {
-        $template = 'inheritance/child';
+        $template = '/include/include';
         $response = $this->getResponse($template);
         
         $out = $this->getBodyContents($response);
         
-        $expected = file_get_contents("tests/rendered/expected/$template.php");
+        $expected = file_get_contents("tests/rendered/include/expected/include.html");
         
         $this->assertEquals($expected, trim($out));
         
+    }
+    
+    public function testExtends()
+    {
+        $template = 'extends/child';
+        $response = $this->getResponse($template);
+
+        $out = $this->getBodyContents($response);
+
+        $expected = file_get_contents("tests/rendered/extends/expected/child.html");
+
+        $this->assertEquals($expected, trim($out));
+
     }
     
     /*

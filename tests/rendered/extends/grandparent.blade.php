@@ -6,12 +6,10 @@
 <body>
     <div class="main">
         <h1>@yield('title')</h1>
-        <p>This is part of the parent template</p>
+        @yield('main')
     </div>
     <div class="side">
-        @section('sidebar')
-        This is the parent part of the sidebar
-        @show
+        @yield('sidebar')
     </div>
 </body>
 </html>
