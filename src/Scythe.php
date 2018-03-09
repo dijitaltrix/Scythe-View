@@ -98,6 +98,11 @@ class Scythe
      */
     public function render(ResponseInterface $response, $template, array $data = [])
     {
+        // check template exists
+        if ( ! $this->exists($template)) {
+            throw new Exception("Renderer cannot find template '$template'");
+        }
+
         // compile template and dependencies as required
         $this->compile($template);
         
@@ -109,20 +114,6 @@ class Scythe
 
         return $response;
 
-    }
-
-    /**
-     * Checks for a compiled version of the $template file
-     * If cache version does not exist or is stale
-     * it will compile the template and cache it
-     *
-     * @param string $template 
-     * @return boolean
-     */
-    private function compile($template)
-    {
-        return true;
-        // $content = $this->getTemplate($template);
     }
 
     /**
@@ -140,6 +131,54 @@ class Scythe
     
     }
     
+    /**
+     * Check that $template exists in the view path or
+     * any namespaced paths
+     *
+     * @param string $template 
+     * @return boolean
+     * @author Ian Grindley
+     */
+    public function exists($template)
+    {
+        return ($this->getTemplateFilepath($template) === false) ? false : true;
+        
+    }
+    
+    /**
+     * Checks for a compiled version of the $template file
+     * If cache version does not exist or is stale
+     * it will compile the template and it's dependencies
+     * then store it in cache
+     *
+     * @param string $template 
+     * @return boolean
+     */
+    private function compile($template)
+    {
+        if ( ! $this->isCompiled($template, $newer=false)) {
+            // fetch blade template
+            $str = $this->getTemplateContents($template);
+            // compile blade template
+            $str = $this->compileString($str);
+            // store compiled template in cache
+            $this->storeCompiled($template, $str);
+        }
+        
+    }
+    
+    /**
+     * Populate a compiled template with $data
+     *
+     * @param string $str 
+     * @param array $data 
+     * @return string
+     */
+    private function populate($template, $data)
+    {
+        return $this->processInIsolation($this->getCompiledFilepath($template), $data);
+    }
+
     /**
      * Compile any blade syntax in $str to plain php
      * Returns a plain php file, ready to be populated with data
@@ -264,10 +303,14 @@ class Scythe
 			# set and unset statements
 			'/(\s*)@set\s*\((.*?)\s*\,\s*(.*)\)/i' => '$1<?php $2 = $3; ?>',
 			'/(\s*)@unset\s*\((.*?)\)/i' => '$1<?php unset($2); ?>',
-            
+
             # isset statement
 			'/(\s*)@isset\s*\((.*?)\)/i' => '$1<?php if (isset($2)): ?>',
 			'/(\s*)@endisset(\s*)/i' => '$1<?php endif; ?>',
+                        
+            # has statement
+			'/(\s*)@has\s*\((.*?)\)/i' => '$1<?php if (isset($2) && ! empty($2)): ?>',
+			'/(\s*)@endhas(\s*)/i' => '$1<?php endif; ?>',
 
 			# handle special unless statement
 			'/(\s*)@unless\s*\((.+?)\)/i' => '$1<?php if ( ! $2): ?>',
@@ -297,8 +340,6 @@ class Scythe
         
     }
 
-
-
     /**
      * Render php code from string using data and return as String
      *
@@ -308,14 +349,34 @@ class Scythe
      */
     private function processInIsolation($filepath, $data=[])
     {
+        ob_start();
+        
         extract($data);
         include $filepath;
 
         return ob_get_clean();
         
     }
-    
 
+    /**
+     * undocumented function
+     *
+     * @param string $template 
+     * @return void
+     * @author Ian Grindley
+     */
+    private function getTemplateFilepath($template)
+    {
+        $filepath = sprintf("%s/%s%s", $this->views_path, ltrim($template, '/'), '.blade.php');
+        if (file_exists($filepath)) {
+            return $filepath;
+        }
+        
+        // loop through namespaces
+        
+        return false;
+        
+    }
 
     /**
      * Returns the contents of the $template file
@@ -324,13 +385,13 @@ class Scythe
      * @param string $template 
      * @return string
      */
-    private function getTemplate($template)
+    private function getTemplateContents($template)
     {
         // check for namespace
         // search view_path
         if ($this->exists($template))
         {
-            return $this->getContents($this->findTemplate($template));
+            return $this->getContents($this->getTemplateFilepath($template));
         }
         
         throw new Exception("Cannot find template '$template'");
@@ -338,20 +399,47 @@ class Scythe
     }
 
     /**
+     * Check for a compiled version of $template in the cache
+     * Optionally compare timestamps to determine if cache is stale
+     *
+     * @param string $template 
+     * @param string $check_timestamps
+     * @return boolean
+     * @author Ian Grindley
+     */
+    private function isCompiled($template, $check_timestamps=false)
+    {
+        return false;
+    }
+
+    private function getCompiledFilepath($template)
+    {
+        return $this->cache_path.'/'.md5($template);
+    }
+
+    /**
      * Returns the contents of the compiled $template 
      * file from the cache folder
      *
      * @param string $template 
-     * @return string
+     * @return string or boolean false
      */
-    private function getCompiled($template)
+    private function getCompiledContents($template)
     {
-        $compiled_filepath = $this->cache_path.'/'.md5($template);
-        if (file_exists($compiled_filepath))
+        $filepath = $this->getCompiledFilepath($template);
+        if (file_exists($filepath))
         {
-            return $this->getContents($compiled_filepath);
+            return $this->getContents($filepath);
         }
         
+        return false;
+        
+    }
+    
+    private function storeCompiled($template, $contents)
+    {
+        $filepath = $this->getCompiledFilepath($template);
+        return file_put_contents($filepath, $contents);
     }
     
     /**
@@ -364,5 +452,6 @@ class Scythe
     {
         return file_get_contents($path);
     }
+    
 
 }

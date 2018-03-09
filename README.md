@@ -132,6 +132,14 @@ Checks whether a variable is set
 @endisset
 ```
 
+### has
+Checks whether a variable is set and has a value 
+```html
+@has($muppet->name)
+<p>Muppet name is set and is not empty</p>
+@endhas
+```
+
 ## Variable manipulation
 Twig has some really nice string modifiers, we have these ;) All examples below are wrapped with htmlentities()
 

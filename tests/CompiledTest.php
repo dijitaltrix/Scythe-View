@@ -7,7 +7,7 @@ use Slim\Http\Body;
 use Slim\Http\Headers;
 use Slim\Http\Response;
 
-class ScytheTest extends \PHPUnit\Framework\TestCase
+class CompiledTest extends \PHPUnit\Framework\TestCase
 {
     
     /**
@@ -19,8 +19,8 @@ class ScytheTest extends \PHPUnit\Framework\TestCase
     public function getRenderer($settings=[])
     {
         return new \Slim\Views\Scythe(array_merge([
-            'views_path' => 'tests/views',
-            'cache_path' => 'tests/cache',
+            'views_path' => 'tests/compiled',
+            'cache_path' => 'tests/compiled/cache',
         ], $settings));
     }
     
@@ -85,22 +85,11 @@ class ScytheTest extends \PHPUnit\Framework\TestCase
 
     }
     
-
-    // public function testResponse()
-    // {
-    //     $response = $this->getResponse('hello', [
-    //         'name' => 'World'
-    //     ]);
-    //
-    //     $this->assertInstanceOf(Response::class, $response);
-    //
-    // }
-    
     public function testCompiledControlStructures()
     {
         $scythe = $this->getRenderer();
         
-        $folder = './tests/views/control';
+        $folder = './tests/compiled/control';
         // loop through each file in control structures
         $files = array_filter(scandir($folder), function($elem) use ($folder) {
             if (is_file("$folder/$elem") && strstr($elem, '.blade.php')) {
@@ -127,7 +116,7 @@ class ScytheTest extends \PHPUnit\Framework\TestCase
     {
         $scythe = $this->getRenderer();
         
-        $folder = './tests/views/variables';
+        $folder = './tests/compiled/variables';
         // loop through each file in control structures
         $files = array_filter(scandir($folder), function($elem) use ($folder) {
             if (is_file("$folder/$elem") && strstr($elem, '.blade.php')) {
