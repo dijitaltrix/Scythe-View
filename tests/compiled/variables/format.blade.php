@@ -1,4 +1,4 @@
-@format("This %s", 'String')
+@format ("This %s", 'String')
 @format("%d %s %s", 99, 'red', 'ballons')
 {{-- Expected
 <?php echo htmlentities(sprintf("This %s", 'String')); ?>

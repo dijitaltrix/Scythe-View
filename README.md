@@ -253,7 +253,6 @@ If NOT something, then what?
 ```
 
 ## Loops
-*The loop statements @continue and @break are not yet implemented*
 
 ### for
 ```php

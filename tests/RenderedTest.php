@@ -118,7 +118,6 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
 
     }
 
-    /*
     public function testNamespacePassedInConstructor()
     {
         $payload = [
@@ -184,7 +183,6 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($expected, trim($out));
         
     }
-    */
     
     // test cache is invalidated when template timestamp updated
     
