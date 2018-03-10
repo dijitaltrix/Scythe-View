@@ -25,6 +25,31 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
     }
     
     /**
+     * Create a call to the renderer with the necessary gubbins 
+     *
+     * @param string $template
+     * @param array $payload
+     * @return Response
+     */
+    public function callRenderer($template, $payload=[])
+    {
+        $response = $this->view->render(
+            new Response(
+                200,
+                new Headers(), 
+                new Body(fopen('php://temp', 'r+'))
+            ), 
+            $template,
+            $payload
+        );
+
+        $response->getBody()->rewind();
+
+        return $response;
+
+    }
+    
+    /**
      * Get a complete response
      *
      * @param string $template 
@@ -79,6 +104,32 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         
     }
 
+    /*
+    public function testDirectives()
+    {
+        $this->view = $this->getRenderer($settings);
+        
+        $this->view->addDirective('/@now/i', function(){
+            return "<?php echo date('Y-m-d H:i:s'); ?>";
+        });
+        $this->view->addDirective('/@date\((.*),\s?(.*)\)/i', function(){
+            return "<?php echo date($1, strtotime($2)); ?>";
+        });
+        
+        $template = '/directives/all';
+        $payload = [];
+
+        $response = $this->callRenderer($template, $payload);
+        
+        $out = $this->getBodyContents($response);
+        
+        $expected = file_get_contents("tests/rendered/directives/expected/all.html");
+        
+        $this->assertEquals($expected, trim($out));
+        
+    }
+    */
+    
     public function testInclude()
     {
         $template = '/include/include';

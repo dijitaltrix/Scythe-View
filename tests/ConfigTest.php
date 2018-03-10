@@ -106,4 +106,47 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
         ]);
         
     }
+    
+    public function testSetDirective()
+    {
+        $view = new \Slim\Views\Scythe([
+            'views_path' => 'tests',
+            'cache_path' => 'tests',
+            'namespaces' => [],
+            'directives' => [
+                '/@now/i' => '<?php echo date("c"); ?>',
+            ]
+        ]);
+        
+        $this->assertArrayHasKey('/@now/i', $view->getDirectives());
+        
+    }
+    
+    public function testSetDirectives()
+    {
+        $view = new \Slim\Views\Scythe([
+            'views_path' => 'tests',
+            'cache_path' => 'tests',
+            'directives' => [
+                '/@now/i' => '<?php echo date("c"); ?>',
+                '/@date\((.*),\s?(.*)\)/i' => '<?php echo date($2, strtotime($1)); ?>',
+            ]
+        ]);
+        
+        $this->assertArrayHasKey('/@now/i', $view->getDirectives());
+        $this->assertArrayHasKey('/@date\((.*),\s?(.*)\)/i', $view->getDirectives());
+        
+    }
+    
+    public function testAddDirectives()
+    {
+        $view = new \Slim\Views\Scythe([
+            'views_path' => 'tests',
+            'cache_path' => 'tests',
+        ]);
+        $view->addDirective('/@hero/i', 'Big Hero 6');
+        
+        $this->assertArrayHasKey('/@hero/i', $view->getDirectives());
+        
+    }
 }

@@ -118,6 +118,21 @@ class Scythe
     }
 
     /**
+     * Returns defined namespaces as array
+     *
+     * @return array
+     */
+    public function getNamespaces()
+    {
+        if (is_array($this->namespaces)) {
+            return $this->namespaces;
+        }
+
+        return [];
+
+    }
+    
+    /**
      * Set namespaces
      * @param array $namespaces
      */
@@ -129,13 +144,38 @@ class Scythe
     }
 
     /**
+     * Add a view namespace
+     *
+     * @param string $name
+     * @param string $folder
+     * @return void
+     */
+    public function addNamespace($name, $path)
+    {
+        if ( ! is_dir($path)) {
+            throw new Exception("Renderer cannot find namespace path at '$path'");
+        }
+        if ( ! is_readable($path)) {
+            throw new Exception("Renderer cannot read from namespace views at '$path'");
+        }
+
+        $this->namespaces[$name] = $path;
+
+    }
+    
+    /**
      * Returns defined namespaces as array
      *
      * @return array
      */
-    public function getNamespaces()
+    public function getDirectives()
     {
-        return $this->namespaces;
+        if (is_array($this->directives)) {
+            return $this->directives;
+        }
+
+        return [];
+
     }
 
     /**
@@ -158,29 +198,9 @@ class Scythe
      */
     public function addDirective($match, $callback)
     {
-        $this->directives[$name] = $callback;
+        $this->directives[$match] = $callback;
     }
-
-    /**
-     * Add a view namespace
-     *
-     * @param string $name
-     * @param string $folder
-     * @return void
-     */
-    public function addNamespace($name, $path)
-    {
-        if ( ! is_dir($path)) {
-            throw new Exception("Renderer cannot find namespace path at '$path'");
-        }
-        if ( ! is_readable($path)) {
-            throw new Exception("Renderer cannot read from namespace views at '$path'");
-        }
-
-        $this->namespaces[$name] = $path;
-
-    }
-
+    
     /**
      * Check that $template exists in the view path or
      * any namespaced paths
@@ -358,6 +378,14 @@ class Scythe
      */
     private function handleDirectives($str)
     {
+		foreach ($this->getDirectives() as $match => $callback) {
+            if (is_callable($callback)) {
+                $str = $this->replaceTag($match, call_user_func($callback), $str);
+            } else {
+                $str = $this->replaceTag($match, $this->compileString($callback), $str);
+            }
+        }
+        
         return $str;
     }
 
@@ -526,71 +554,80 @@ class Scythe
         return [
 
 			# remove blade comments
-			'/(\s*){{--\s*(.+?)\s*--}}/i' => '$1',
+			'/{{--\s+(.+?)\s+--}}/i' => '',
 
 			# echo with a default
-			'/(\s*){{\s*(.+?)\s*or\s*(.+?)\s*}}/i' => '$1<?php echo (isset($2)) ? htmlentities($2) : $3; ?>',
+			'/{{\s+(.+?)\s+or\s+(.+?)\s+}}/i' => '<?php echo (isset($1)) ? htmlentities($1) : $2; ?>',
 
 			# echo an escaped variable
-			'/(\s*){{\s*(.+?)\s*}}/i' => '$1<?php echo htmlentities($2); ?>',
+			'/{{\s+(.+?)\s+}}/i' => '<?php echo htmlentities($1); ?>',
 
 			# echo an unescaped variable
-			'/(\s*){!!\s*(.+?)\s*!!}/i' => '$1<?php echo $2; ?>',
+			'/{!!\s+(.+?)\s+!!}/i' => '<?php echo $1; ?>',
 
             # variable display mutators, wrap these in htmlentities as necessary
-            '/(\s*)@json\s*\((.*?)\)/i' => '$1<?php echo json_encode($2); ?>',
-            '/(\s*)@lower\s*\((.*?)\)/i' => '$1<?php echo htmlentities(strtolower($2)); ?>',
-            '/(\s*)@upper\s*\((.*?)\)/i' => '$1<?php echo htmlentities(strtoupper($2)); ?>',
-            '/(\s*)@ucfirst\s*\((.*?)\)/i' => '$1<?php echo htmlentities(ucfirst(strtolower($2))); ?>',
-            '/(\s*)@ucwords\s*\((.*?)\)/i' => '$1<?php echo htmlentities(ucwords(strtolower($2))); ?>',
-            '/(\s*)@(format|sprintf)\s*\((.*?)\)/i' => '$1<?php echo htmlentities(sprintf($3)); ?>',
+            '/@json\s?\((.*?)\)/i' => '<?php echo json_encode($1); ?>',
+            '/@lower\s?\((.*?)\)/i' => '<?php echo htmlentities(strtolower($1)); ?>',
+            '/@upper\s?\((.*?)\)/i' => '<?php echo htmlentities(strtoupper($1)); ?>',
+            '/@ucfirst\s?\((.*?)\)/i' => '<?php echo htmlentities(ucfirst(strtolower($1))); ?>',
+            '/@ucwords\s?\((.*?)\)/i' => '<?php echo htmlentities(ucwords(strtolower($1))); ?>',
+            '/@(format|sprintf)\s?\((.*?)\)/i' => '<?php echo htmlentities(sprintf($2)); ?>',
 
 
             # wordwrap has multiple parameters
-            '/(\s*)@wrap\s*\((.*?)\)/i' => '$1<?php echo htmlentities(wordwrap($2)); ?>',
-            '/(\s*)@wrap\s*\((.*?)\s*,\s*(.*?)\)/i' => '$1<?php echo htmlentities(wordwrap($2, $3)); ?>',
-            '/(\s*)@wrap\s*\((.*?)\s*,\s*(.*?)\s*,\s*(.*?)\)/i' => '$1<?php echo htmlentities(wordwrap($2, $3, $4)); ?>',
+            '/@wrap\s?\((.*?)\)/i' => '<?php echo htmlentities(wordwrap($1)); ?>',
+            '/@wrap\s?\((.*?)\s*,\s*(.*?)\)/i' => '<?php echo htmlentities(wordwrap($1, $2)); ?>',
+            '/@wrap\s?\((.*?)\s*,\s*(.*?)\s*,\s*(.*?)\)/i' => '<?php echo htmlentities(wordwrap($1, $2, $3)); ?>',
 
 			# set and unset statements
-			'/(\s*)@set\s*\((.*?)\s*\,\s*(.*)\)/i' => '$1<?php $2 = $3; ?>',
-			'/(\s*)@unset\s*\((.*?)\)/i' => '$1<?php unset($2); ?>',
+			'/@set\s?\((.*?)\s*\,\s*(.*)\)/i' => '<?php $1 = $2; ?>',
+			'/@unset\s?\((.*?)\)/i' => '<?php unset($1); ?>',
 
             # isset statement
-			'/(\s*)@isset\s*\((.*?)\)/i' => '$1<?php if (isset($2)): ?>',
-			'/(\s*)@endisset(\s*)/i' => '$1<?php endif; ?>',
+			'/@isset\s?\((.*?)\)/i' => '<?php if (isset($1)): ?>',
+			'/@endisset/i' => '<?php endif; ?>',
 
             # has statement
-			'/(\s*)@has\s*\((.*?)\)/i' => '$1<?php if (isset($2) && ! empty($2)): ?>',
-			'/(\s*)@endhas(\s*)/i' => '$1<?php endif; ?>',
+			'/@has\s?\((.*?)\)/i' => '<?php if (isset($1) && ! empty($1)): ?>',
+			'/@endhas/i' => '<?php endif; ?>',
 
 			# handle special unless statement
-			'/(\s*)@unless\s*\((.+?)\)/i' => '$1<?php if ( ! $2): ?>',
-			'/(\s*)@endunless(\s*)/i' => '$1<?php endif; ?>',
+			'/@unless\s?\((.+?)\)/i' => '<?php if ( ! $1): ?>',
+			'/@endunless/i' => '<?php endif; ?>',
 
             # each statements
             # eachelse matches first
-            '/(\s*)@each\s*\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")],\s*(.*)\s*\)/i' => "$1@forelse ($3 as \$$4)\n@include($2)\n@empty\n@include($5)\n@endforelse",
-            '/(\s*)@each\s*\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")]\s*\)/i' => "$1@foreach ($3 as \$$4)\n@include($2)\n@endforeach",
+            '/@each\s?\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")],\s*(.*)\s*\)/i' => "@forelse ($2 as \$$3)\n@include($1)\n@empty\n@include($4)\n@endforelse",
+            '/@each\s?\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")]\s*\)/i' => "@foreach ($2 as \$$3)\n@include($1)\n@endforeach",
+
+            # special empty statement
+            '/@empty\s?\((.*?)\)/i' => '<?php if (empty($1)): ?>',
+            '/@endempty/i' => '<?php endif; ?>',
 
             # switch statement
-            '/(\s*)@switch\s*\((.*?)\)/i' => '$1<?php switch ($2): ?>',
-            '/(\s*)@case\s*\((.*?)\)/i' => '$1<?php case $2: ?>',
-            '/(\s*)@default(\s*)/i' => '$1<?php default: ?>',
-            '/(\s*)@endswitch(\s*)/i' => '$1<?php endswitch: ?>',
-
+            '/@switch\s?\((.*?)\)/i' => '<?php switch ($1): ?>',
+            '/@case\s?\((.*?)\)/i' => '<?php case $1: ?>',
+            '/@default/i' => '<?php default: ?>',
+            '/@continue\s?\(\s*(.*)\s*\)/i' => '<?php if ($1): continue; endif; ?>',
+            '/@continue/i' => '<?php continue; ?>',
+            '/@break\s?\(\s*([0-9])\s*\)/i' => '<?php break($1); ?>',
+            '/@break\s?\(\s*(.*)\s*\)/i' => '<?php if ($1): break; endif; ?>',
+            '/@break/i' => '<?php break; ?>',
+            '/@endswitch/i' => '<?php endswitch; ?>',
+            
 			# handle special forelse loop
-			'/(\s*)@forelse\s*\(\s*(\S*)\s*as\s*(\S*)\s*\)(\s*)/i' => "$1<?php if ( ! empty($2)): ?>$1<?php foreach ($2 as $3): ?>$4",
-			'/(\s*)@empty(\s*)/' => "$1<?php endforeach; ?>$1<?php else: ?>$2",
-			'/(\s*)@endforelse(\s*)/' => '$1<?php endif; ?>$2',
+			'/@forelse\s?\(\s*(\S*)\s*as\s*(\S*)\s*\)(\s*)/i' => "<?php if ( ! empty($1)): ?><?php foreach ($1 as $2): ?>$3",
+			'/@empty/' => "<?php endforeach; ?>\n<?php else: ?>",
+			'/@endforelse/' => '<?php endif; ?>',
 
 			# handle loops and control structures
-			'/(?(R)\((?:[^\(\)]|(?R))*\)|(?<!\w)(\s*)@(if|elseif|foreach|for|while)(\s*(?R)+))/i' => '$1<?php $2$3: ?>$4',
-			'/(\s*)@(else)(\s*)/i' => '$1<?php else: ?>$3',
-			'/(\s*)@(endif|endforeach|endfor|endwhile)(\s*)/' => '$1<?php $2; ?>$3',
+			'/@(if|elseif|foreach|for|while)(\s*(.*?)+\s*\))/i' => '<?php $1$2: ?>',
+			'/@else/i' => '<?php else: ?>',
+			'/@(endif|endforeach|endfor|endwhile)/' => '<?php $1; ?>',
 
             # swap out @php and @endphp
-			'/(\s*)@php(\s*)/i' => '$1<?php',
-			'/(\s*)@endphp(\s*)/i' => '$1?>',
+			'/@php/i' => '<?php',
+			'/@endphp/i' => '?>',
 
         ];
 
