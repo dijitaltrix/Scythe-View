@@ -2,15 +2,17 @@
 
 _pronounced [sahyth]_
 
-A simple implementation of Laravel Blade syntax for rendering blade views into a PSR-7 Response object. 
-No dependencies, works great with Slim Framework 3.
+A simple implementation of Laravel Blade for rendering blade syntax in views into a PSR-7 Response object. 
+This has no dependencies and it works great with Slim Framework 3.
 
 This implementation does not aim for feature parity, that is beyond the scope of this project.
-If you need more you can use a complete Blade package such as [philo/laravel-blade](https://packagist.org/packages/philo/laravel-blade).
+It aims to be a lightweight, simple and fast wrapper around PHP.
 It does offer some useful methods and the ability to add custom directives through callbacks.
+If you need full compatibility you can use a package such as [philo/laravel-blade](https://packagist.org/packages/philo/laravel-blade).
 
 If you're unfamiliar with Blade as a view renderer it's main advantage is it's *lightness*, it is essentially a simple wrapper around PHP.
 The syntax behaves as a PHP programmer would expect it to, so for those familar with PHP there is very little mental juggling required to understand Blade.
+
 
 ### Table of Contents  
 * [Installation](#installation)
@@ -43,7 +45,7 @@ Add Scythe to your container, passing the required parameters `views_path` and `
 
 ```php
 $container['view'] = function($c) {
-    return new \Slim\Views\Scythe([
+    return new \Ignition\Scythe([
         'views_path' => 'path/to/views',
         'cache_path' => 'path/to/cache',
     ]);
@@ -67,7 +69,7 @@ You may add namespaces and directives using the methods outlined in the Methods 
 ### Use with any PSR-7 Project
 ```php
 
-$view = new \Slim\Views\Scythe([
+$view = new \Ignition\Scythe([
     'views_path' => 'path/to/views',
     'cache_path' => 'path/to/cache',
 ]);
@@ -92,36 +94,37 @@ Opening and closing php tags can be used follows
 All variable display functions will escape your output using htmlentities() except for echo raw: `{!! $danger !!}`
 ### echo
 Displays the contents of $name
-```
+```php
 {{ $name }}
+// <?php echo htmlentities($name); ?>
 ```
 
 ### echo raw
 Use this with caution when displaying user generated data
-```
+```php
 {!! $name !!}
+// <?php echo $name; ?>
 ```
 
 ### echo with a default
 Displays 'Anonymous' if $name is not set
-```
+```php
 {{ $name or 'Anonymous' }}
+// <?php (isset($name)) ? htmlentities($name) : 'Anonymous'; ?>
 ```
 
 ### set
 Sets the value of a variable
-```html
+```php
 @set($muppet, 'Kermit')
-{{ $muppet }}
-<!-- Kermit -->
+// <?php $muppet = 'Kermit'; ?>
 ```
 
 ### unset
 Removes a variable from the scope
-```html
+```php
 @unset($muppet)
-{{ $muppet or 'Where did he go?' }}
-<!-- Where did he go? -->
+// <?php unset($muppet); ?>
 ```
 
 ### isset
@@ -172,7 +175,7 @@ Converts the string to lowercase, then capitalises each word
 ```
 
 ### format
-This is just a wrapper around the handy sprintf function
+This is just a wrapper around the handy sprintf function, you can also use @sprintf!
 ```html
 @format("There were %s in the %s", "dogs", "yard")
 <!-- There were dogs in the yard -->

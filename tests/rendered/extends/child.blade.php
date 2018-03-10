@@ -2,7 +2,7 @@
 
 @section('title', 'This is the title')
 
-@section('sidebar')
+@section("sidebar")
         <ul>
             <li>This is the</li>
             <li>Sidebar section</li>

@@ -279,7 +279,7 @@ class Scythe
      */
     public function compileString($str)
     {
-        // while this has directives
+        // while this has directives - multi pass?
         if (substr($str, 0, 9) == '@extends(') {
             $str = $this->handleExtends($str);
         }
@@ -340,13 +340,13 @@ class Scythe
     private function handleExtends($str)
     {
         // capture section(name, value) placeholders
-		foreach ($this->getMatches('/\([(\'|\")]([a-z]+)[(\'|\")]\s*,\s*[(\'|\")]([[:print:]]+)[(\'|\")]\)/i', $str) as $section) {
-            $this->addSection($section);
+		foreach ($this->getMatches('/\@section\([(\'|\")]([a-z]+)[(\'|\")]\s*,\s*[(\'|\")]([[:print:]]+)[(\'|\")]\)/i', $str) as $section) {
+            $this->addBuild('sections', $section);
 		}
 
 		# capture section(name) placeholders
 		foreach ($this->getMatches('/\@section\(\s*[\'|\"]([a-z0-9\-\_\.]+)[\'|\"]\s*\)\s*(.*)\s*\@endsection/sU', $str) as $section) {
-            $this->addSection($section);
+            $this->addBuild('sections', $section);
 		}
 
 		# load compiled parent template
@@ -355,7 +355,7 @@ class Scythe
 		}
 
 		# merge child sections into parent
-		foreach ($this->getSections() as $name => $content) {
+		foreach ($this->getBuild('sections') as $name => $content) {
 			$str = $this->replaceSection($str, $name, $content);
         }
 
@@ -371,12 +371,49 @@ class Scythe
      */
     private function handleIncludes($str)
     {
-		foreach ($this->getMatches('/\@include\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/im', $str) as $match) {
-			$str = $this->replaceTag(sprintf("@include('%s')", $match), $this->getCompiledContents($match), $str);
+		foreach ($this->getMatches('/\@include\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
+            $str = $this->replaceTag(sprintf("#\@include\([(\'\")]%s[(\'\")]\)#is", $match), $this->getCompiledContents($match), $str);
+        }
+
+		foreach ($this->getMatches('/\@includeif\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
+            if ($this->exists($match)) {
+                $str = $this->replaceTag(sprintf("#\@includeif\([(\'\")]%s[(\'\")]\)#is", $match), $this->getCompiledContents($match), $str);
+			} else {
+			    $str = $this->replaceTag(sprintf("#\@includeif\([(\'\")]%s[(\'\")]\)#is", $match), null, $str);
+			}
 		}
 
         return $str;
     }
+
+    /**
+     * Returns $area stored in the build area
+     *
+     * @return array
+     */
+	private function getBuild($area)
+	{
+        if (isset($this->_build[$area])) {
+            return $this->_build[$area];
+        }
+
+        return [];
+
+	}
+
+    /**
+     * Add content to the build area for insertion into a parent
+     * template
+     *
+     * @param array $section
+     * @return void
+     */
+	private function addBuild($area, $section)
+	{
+        list($name, $str) = $section;
+		$this->_build[$area][$name] = $this->compileString($str);
+
+	}
 
     /**
      * Returns matches from $content between the tags in $expr
@@ -411,40 +448,11 @@ class Scythe
      */
 	private function replaceTag($expr, $replace, $content)
 	{
-		return str_replace($expr, $replace, $content);
+		return preg_replace($expr, $replace, $content);
 	}
 
     /**
-     * Returns the sections stored in the build area
-     *
-     * @return array
-     */
-	private function getSections()
-	{
-        if (isset($this->_build['sections'])) {
-            return $this->_build['sections'];
-        }
-
-        return [];
-
-	}
-
-    /**
-     * Add content to the build area for insertion into a parent
-     * template
-     *
-     * @param array $section
-     * @return void
-     */
-	private function addSection($section)
-	{
-        list($name, $str) = $section;
-		$this->_build['sections'][$name] = $this->compileString($str);
-
-	}
-
-    /**
-     * Swaps out an entire section of the template
+     * Matches the two types of section tag to be replaced
      *
      * @param string $name
      * @param string $replace
@@ -453,11 +461,13 @@ class Scythe
      */
 	private function replaceSection($str, $name, $replace)
 	{
-        $match = [
-            "/\@section\(\'$name\'\)(.*?)\@(stop|show|endsection)/is",
-            "/\@yield\(\'$name\'\)/is",
+        $matches = [
+            sprintf("/\@section\([(\'\")]%s[(\'\")]\)(.*?)\@(stop|show|endsection)/is", $name),
+            sprintf("/\@yield\([(\'\")]%s[(\'\")]\)/is", $name),
         ];
-		$str = preg_replace($match, $replace, $str);
+        foreach ($matches as $expr) {
+            $str = $this->replaceTag($expr, $replace, $str);
+        }
 
         return $str;
 
@@ -531,7 +541,7 @@ class Scythe
             # eachelse matches first
             '/(\s*)@each\s*\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")],\s*(.*)\s*\)/i' => "$1@forelse ($3 as \$$4)\n@include($2)\n@empty\n@include($5)\n@endforelse",
             '/(\s*)@each\s*\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")]\s*\)/i' => "$1<?php foreach ($3 as \$$4): ?>\n@include($2)\n<?php endforeach; ?>",
-            
+
             # switch statement
             '/(\s*)@switch\s*\((.*?)\)/i' => '$1<?php switch ($2): ?>',
             '/(\s*)@case\s*\((.*?)\)/i' => '$1<?php case $2: ?>',

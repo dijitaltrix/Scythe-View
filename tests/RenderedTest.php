@@ -65,7 +65,6 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         return $response->getBody()->getContents(); 
     }
     
-    
     public function testHelloWorld()
     {
         $payload = ['name' => 'world'];
@@ -92,7 +91,20 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($expected, trim($out));
         
     }
-    
+
+    public function testIncludeIf()
+    {
+        $template = '/include/includeif';
+        $response = $this->getResponse($template);
+        
+        $out = $this->getBodyContents($response);
+        
+        $expected = file_get_contents("tests/rendered/include/expected/includeif.html");
+        
+        $this->assertEquals($expected, trim($out));
+        
+    }
+
     public function testExtends()
     {
         $template = 'extends/child';
@@ -105,7 +117,7 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($expected, trim($out));
 
     }
-    
+
     /*
     public function testNamespacePassedInConstructor()
     {
