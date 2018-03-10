@@ -45,6 +45,12 @@ class Scythe
     protected $directives;
 
     /**
+     * Compact the output, strips unnecessary whitespace
+     * @var boolean
+     */
+    protected $compact;
+    
+    /**
      * Holds contents during template construction
      * @var array
      */
@@ -62,6 +68,7 @@ class Scythe
         $settings = array_merge([
             'views_path' => null,
             'cache_path' => null,
+            'compact' => false,
             'namespaces' => [],
             'directives' => [],
         ], $settings);
@@ -209,6 +216,10 @@ class Scythe
         $out = $this->populate($template, $data);
 
         $this->reset();
+        
+        if ($this->compact) {
+            $out = $this->compact($out);
+        }
 
         // add to response
         $response->getBody()->write($out);
@@ -227,6 +238,10 @@ class Scythe
     public function renderString($blade, array $data = [])
     {
         $out = $this->compileString($blade);
+
+        if ($this->compact) {
+            $out = $this->compact($out);
+        }
 
         $this->reset();
 
@@ -309,6 +324,21 @@ class Scythe
         return $out;
 
     }
+    
+    /**
+     * strip unnecessary whitespace from the output
+     *
+     * @param string $str 
+     * @return string
+     */
+	private function compact($str)
+	{
+		$str = trim($str);
+		$str = preg_replace('/>(\s*?)</is', '><', $str);
+		
+		return $str;
+
+	}
 
     /**
      * Reset the build area
