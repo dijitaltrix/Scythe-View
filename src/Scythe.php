@@ -570,7 +570,7 @@ class Scythe
             # each statements
             # eachelse matches first
             '/(\s*)@each\s*\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")],\s*(.*)\s*\)/i' => "$1@forelse ($3 as \$$4)\n@include($2)\n@empty\n@include($5)\n@endforelse",
-            '/(\s*)@each\s*\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")]\s*\)/i' => "$1<?php foreach ($3 as \$$4): ?>\n@include($2)\n<?php endforeach; ?>",
+            '/(\s*)@each\s*\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")]\s*\)/i' => "$1@foreach ($3 as \$$4)\n@include($2)\n@endforeach",
 
             # switch statement
             '/(\s*)@switch\s*\((.*?)\)/i' => '$1<?php switch ($2): ?>',
