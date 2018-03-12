@@ -315,22 +315,16 @@ It also supports the generation of the forelse structure if you pass a view to d
 A loop helper is available, this works identically to the Blade $loop helper
 
 **Property**       | **Description**                                           
--------------------|-----------------------------------------------------------
 $loop->index	   | The index of the current loop iteration (starts at 0).    
--------------------|-----------------------------------------------------------
 $loop->iteration   | The current loop iteration (starts at 1).                 
--------------------|-----------------------------------------------------------
 $loop->remaining   | The iteration remaining in the loop.                      
--------------------|-----------------------------------------------------------
 $loop->count	   | The total number of items in the array being iterated.    
--------------------|-----------------------------------------------------------
 $loop->first	   | Whether this is the first iteration through the loop.     
--------------------|-----------------------------------------------------------
 $loop->last	       | Whether this is the last iteration through the loop.      
--------------------|-----------------------------------------------------------
 $loop->depth	   | The nesting level of the current loop.                    
--------------------|-----------------------------------------------------------
-$loop->parent	   | When in a nested loop, the parent's loop variable.        
+$loop->parent*	   | When in a nested loop, the parent's loop variable.        
+
+*Not implemented yet
 
 ## Inheritance
 
