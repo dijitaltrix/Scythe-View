@@ -314,7 +314,8 @@ It also supports the generation of the forelse structure if you pass a view to d
 #### Loop variable
 A loop helper is available, this works identically to the Blade $loop helper
 
-**Property**       | **Description**                                           
+**Property**       | **Description**   
+-------------------|----------------                                        
 $loop->index	   | The index of the current loop iteration (starts at 0).    
 $loop->iteration   | The current loop iteration (starts at 1).                 
 $loop->remaining   | The iteration remaining in the loop.                      
