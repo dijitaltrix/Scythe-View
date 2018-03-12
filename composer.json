@@ -15,7 +15,7 @@
   },
     "autoload": {
         "psr-4": {
-            "Slim\\Views\\": "src",
+            "Dijix\\Views\\": "src",
             "Tests\\": "tests"
         }
     },
