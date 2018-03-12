@@ -18,7 +18,7 @@ class ResponseTest extends \PHPUnit\Framework\TestCase
      */
     public function getRenderer($settings=[])
     {
-        return new \Slim\Views\Scythe(array_merge([
+        return new \Dijix\Views\Scythe(array_merge([
             'views_path' => 'tests/rendered',
             'cache_path' => 'tests/rendered/cache',
         ], $settings));

@@ -11,7 +11,7 @@
  * @license   https://github.com/ignition/Scythe-View/blob/master/LICENSE.md (MIT License)
  */
 
-namespace Slim\Views;
+namespace Dijix\Views;
 
 use Exception;
 use InvalidArgumentException;

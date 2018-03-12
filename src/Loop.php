@@ -6,7 +6,7 @@
  */
 
     
-namespace Slim\Views;
+namespace Dijix\Views;
 
 use Exception;
 

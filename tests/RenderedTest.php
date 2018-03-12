@@ -18,7 +18,7 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
      */
     public function getRenderer($settings=[])
     {
-        return new \Slim\Views\Scythe(array_merge([
+        return new \Dijix\Views\Scythe(array_merge([
             'views_path' => 'tests/rendered',
             'cache_path' => 'tests/rendered/cache',
         ], $settings));
@@ -227,7 +227,7 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
             ]
         ];
         
-        $view = new \Slim\Views\Scythe([
+        $view = new \Dijix\Views\Scythe([
             'views_path' => 'tests/rendered',
             'cache_path' => 'tests/rendered/cache',
         ]);
