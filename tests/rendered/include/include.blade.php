@@ -1,2 +1,3 @@
 @include('include/header')
-@include('include/footer')
+@include('include/body', ['title'=>"Heading"])
+@include("include/footer")

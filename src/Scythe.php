@@ -55,7 +55,12 @@ class Scythe
      * @var array
      */
     private $_build;
-
+    
+    /**
+     * Holds loop helper class
+     * @var object
+     */
+    private $_loop;
 
 
     /**
@@ -79,6 +84,8 @@ class Scythe
         $this->setDirectives($settings['directives']);
 
         $this->_build = [];
+        
+        $this->_loop = new Loop();
 
     }
 
@@ -234,13 +241,13 @@ class Scythe
 
         // populate compiled template with data
         $out = $this->populate($template, $data);
-
-        $this->reset();
         
         if ($this->compact) {
             $out = $this->compact($out);
         }
 
+        $this->reset();
+        
         // add to response
         $response->getBody()->write($out);
 
@@ -285,6 +292,8 @@ class Scythe
             $str = $this->getTemplateContents($template);
             // compile blade template
             $str = $this->compileString($str);
+            // complete stacks
+            $str = $this->includeStacks($str);
             // store compiled template in cache
             $this->storeCompiled($template, $str);
         }
@@ -370,7 +379,26 @@ class Scythe
         $this->_build = [];
     }
 
-    /** TODO
+    /**
+     * Insert contents of _build stacks into template replacing their placeholders
+     * This must be called last thing as stacks can be pushed to at any point in the 
+     * compilation process
+     *
+     * @param string $str 
+     * @return string 
+     */
+    private function includeStacks($str)
+    {
+        foreach ($this->getBuild('stacks') as $name => $content)
+        {
+            $str = $this->replaceTag(sprintf("/@stack\s?\(\s*[\'\"]%s[\'\"]\s*\)/is", $name), $content, $str);
+        }
+        
+        return $str;
+        
+    }
+    
+    /** 
      * Converts blade user directives to plain php
      *
      * @param string $str
@@ -407,11 +435,16 @@ class Scythe
             $this->addBuild('sections', $section);
 		}
 
+        # capture push sections for stacks
+		foreach ($this->getMatches('/\@push\(\s*[\'|\"]([a-z0-9\-\_\.]+)[\'|\"]\s*\)\s*(.*)\s*\@endpush/sU', $str) as $stack) {
+            $this->addBuild('stacks', $stack, $append=true);
+		}
+
 		# load compiled parent template
 		foreach ($this->getMatches('/\@extends\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
 			$str = $this->getCompiledContents($match);
 		}
-
+        
 		# merge child sections into parent
 		foreach ($this->getBuild('sections') as $name => $content) {
 			$str = $this->replaceSection($str, $name, $content);
@@ -421,7 +454,7 @@ class Scythe
 
     }
 
-    /**
+    /**TODO complete include when
      * Handles includes
      *
      * @param string $str
@@ -429,18 +462,36 @@ class Scythe
      */
     private function handleIncludes($str)
     {
-		foreach ($this->getMatches('/\@include\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
-            $str = $this->replaceTag(sprintf("#\@include\([(\'\")]%s[(\'\")]\)#is", $match), $this->getCompiledContents($match), $str);
+		foreach ($this->getMatches('/\@include\s?\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*,\s*\[(.*?)\]\s*\)/is', $str) as $match) {
+            $extract = sprintf('<?php extract([%s]); ?>', $match[1]);
+            $str = $this->replaceTag(sprintf("#@include\s?\([(\'\")]%s[(\'\")]\s*,\s*\[%s\]\s*\)#is", $match[0], $match[1]), $extract.$this->getCompiledContents($match[0]), $str);
+        }
+        
+		foreach ($this->getMatches('/\@include\s?\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
+            $str = $this->replaceTag(sprintf("#@include\s?\([(\'\")]%s[(\'\")]\)#is", $match), $this->getCompiledContents($match), $str);
         }
 
-		foreach ($this->getMatches('/\@includeif\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
+		foreach ($this->getMatches('/\@includeif\s?\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
             if ($this->exists($match)) {
-                $str = $this->replaceTag(sprintf("#\@includeif\([(\'\")]%s[(\'\")]\)#is", $match), $this->getCompiledContents($match), $str);
+                $str = $this->replaceTag(sprintf("#@includeif\s?\([(\'\")]%s[(\'\")]\)#is", $match), $this->getCompiledContents($match), $str);
 			} else {
-			    $str = $this->replaceTag(sprintf("#\@includeif\([(\'\")]%s[(\'\")]\)#is", $match), null, $str);
+			    $str = $this->replaceTag(sprintf("#@includeif\s?\([(\'\")]%s[(\'\")]\)#is", $match), null, $str);
 			}
 		}
 
+		foreach ($this->getMatches('/@includeWhen\s?\(\s*(.*?)\s*,\s*[\'\"](.*?)[\'\"]\s*\)/i', $str) as $match) {
+            $if = sprintf('<?php if (%s): ?>', $match[0]);
+            $endif = '<?php endif; ?>';
+            $str = $this->replaceTag(sprintf('#@includeWhen\s?\(\s*%s\s*,\s*[(\'\")]%s[(\'\")]\s*\)#is', str_replace('$', '\$', $match[0]), $match[1]), $if.$this->getCompiledContents($match[1]).$endif, $str);
+        }
+        /*
+		foreach ($this->getMatches('/@includeWhen\s?\(\s*(.*?)\s*,\s*[\'\"](.*?)[\'\"]\s*,\s*\[(.*?)\]\)/i', $str) as $match) {
+            $if = sprintf('<?php if (%s): ?>', $match[0]);
+            $extract = sprintf('<?php extract([%s]); ?>', $match[2]);
+            $endif = '<?php endif; ?>';
+            $str = $this->replaceTag(sprintf("#@includeWhen\s?\(\s*%s\s*,\s*[(\'\")]%s[(\'\")]\)#is", $match[0], $match[1]), $if.$this->getCompiledContents($match[1]).$endif, $str);
+        }
+        */
         return $str;
     }
 
@@ -460,16 +511,26 @@ class Scythe
 	}
 
     /**
-     * Add content to the build area for insertion into a parent
-     * template
+     * Add content to the build area for insertion into a parent template
+     * when append flag is false content will be replaced,
+     * when true it will be appended
      *
+     * @param string $name
      * @param array $section
+     * @param boolean $append
      * @return void
      */
-	private function addBuild($area, $section)
+	private function addBuild($area, $section, $append=false)
 	{
         list($name, $str) = $section;
-		$this->_build[$area][$name] = $this->compileString($str);
+        if ($append) {
+            if ( ! isset($this->_build[$area][$name])) {
+                $this->_build[$area][$name] = null;
+            }
+    		$this->_build[$area][$name].= $this->compileString($str);
+        } else {
+    		$this->_build[$area][$name] = $this->compileString($str);
+        }
 
 	}
 
@@ -512,18 +573,25 @@ class Scythe
     /**
      * Matches the two types of section tag to be replaced
      *
-     * @param string $name
-     * @param string $replace
-     * @param string $content
+     * @param string $str - the matched content to be replaced
+     * @param string $name - the section placeholder name
+     * @param string $replace - the content to replace with
      * @return string
      */
 	private function replaceSection($str, $name, $replace)
 	{
         $matches = [
             sprintf("/\@section\([(\'\")]%s[(\'\")]\)(.*?)\@(stop|show|endsection)/is", $name),
-            sprintf("/\@yield\([(\'\")]%s[(\'\")]\)/is", $name),
+            sprintf("/\@(yield|replace)\([(\'\")]%s[(\'\")]\)/is", $name),
         ];
         foreach ($matches as $expr) {
+            // if we have @parent then merge content in, otherwise replace it
+            if (stristr($replace, '@parent')) {
+                foreach ($this->getMatches($expr, $str) as $match) {
+                    // fetch section content from $str and merge with $replace
+                    $replace = str_replace('@parent', $match[0], $replace);
+                }
+            } 
             $str = $this->replaceTag($expr, $replace, $str);
         }
 
@@ -532,7 +600,7 @@ class Scythe
 	}
 
     /**
-     * Replaces blade placholders with their php equivalents
+     * Replaces blade placeholders with their php equivalents
      * the bulk of the conversion is done here
      *
      * @param string $str
@@ -559,8 +627,10 @@ class Scythe
 			# echo with a default
 			'/{{\s+(.+?)\s+or\s+(.+?)\s+}}/i' => '<?php echo (isset($1)) ? htmlentities($1) : $2; ?>',
 
-			# echo an escaped variable
-			'/{{\s+(.+?)\s+}}/i' => '<?php echo htmlentities($1); ?>',
+			# echo an escaped variable, ignoring @{{ var }} for js frameworks
+			'/(?<![@]){{\s*(.*?)\s*}}/i' => '<?php echo htmlentities($1); ?>',
+            # output for js frameworks
+			'/@{{\s*(.*?)\s*}}/i' => '{{ $1 }}',
 
 			# echo an unescaped variable
 			'/{!!\s+(.+?)\s+!!}/i' => '<?php echo $1; ?>',
@@ -595,11 +665,6 @@ class Scythe
 			'/@unless\s?\((.+?)\)/i' => '<?php if ( ! $1): ?>',
 			'/@endunless/i' => '<?php endif; ?>',
 
-            # each statements
-            # eachelse matches first
-            '/@each\s?\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")],\s*(.*)\s*\)/i' => "@forelse ($2 as \$$3)\n@include($1)\n@empty\n@include($4)\n@endforelse",
-            '/@each\s?\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")]\s*\)/i' => "@foreach ($2 as \$$3)\n@include($1)\n@endforeach",
-
             # special empty statement
             '/@empty\s?\((.*?)\)/i' => '<?php if (empty($1)): ?>',
             '/@endempty/i' => '<?php endif; ?>',
@@ -615,15 +680,24 @@ class Scythe
             '/@break/i' => '<?php break; ?>',
             '/@endswitch/i' => '<?php endswitch; ?>',
             
+			# handle loops and control structures
+			'/@foreach ?\( *(.*?) *as *(.*?) *\)/i' => '<?php $loop->start($1); foreach($1 as $2): ?>',
+			'/@endforeach/' => '<?php $loop->increment(); endforeach; $loop->end(); ?>',
+
 			# handle special forelse loop
-			'/@forelse\s?\(\s*(\S*)\s*as\s*(\S*)\s*\)(\s*)/i' => "<?php if ( ! empty($1)): ?><?php foreach ($1 as $2): ?>$3",
-			'/@empty/' => "<?php endforeach; ?>\n<?php else: ?>",
+			'/@forelse\s?\(\s*(\S*)\s*as\s*(\S*)\s*\)(\s*)/i' => "<?php if ( ! empty($1)): \$loop->start($1); foreach ($1 as $2): ?>\n",
+			'/@empty/' => "<?php \$loop->increment(); endforeach; \$loop->end(); ?>\n<?php else: ?>",
 			'/@endforelse/' => '<?php endif; ?>',
 
-			# handle loops and control structures
-			'/@(if|elseif|foreach|for|while)(\s*(.*?)+\s*\))/i' => '<?php $1$2: ?>',
+            # each statements
+            # eachelse matches first
+            '/@each\s?\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")],\s*(.*)\s*\)/i' => "<?php if ( ! empty($2)): \$loop->start($2); foreach ($2 as \$$3): ?>\n@include($1)\n<?php \$loop->increment(); endforeach; \$loop->end(); ?>\n<?php else: ?>\n@include($4)\n<?php endif; ?>",
+            '/@each\s?\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")]\s*\)/i' => "<?php \$loop->start($2); foreach($2 as \$$3): ?>\n@include($1)\n<?php \$loop->increment(); endforeach; \$loop->end(); ?>",
+
+            # control structures
+			'/@(if|elseif|for|while)(\s*(.*?)+\s*\))/i' => '<?php $1$2: ?>',
 			'/@else/i' => '<?php else: ?>',
-			'/@(endif|endforeach|endfor|endwhile)/' => '<?php $1; ?>',
+			'/@(endif|endfor|endwhile)/' => '<?php $1; ?>',
 
             # swap out @php and @endphp
 			'/@php/i' => '<?php',
@@ -644,7 +718,7 @@ class Scythe
     {
         ob_start();
 
-        extract($data);
+        extract($data + ['loop'=>$this->_loop]);
         include $filepath;
 
         return ob_get_clean();

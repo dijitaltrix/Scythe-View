@@ -2,7 +2,7 @@
 {!! $i !!}
 @endforeach
 {{-- Expected
-<?php foreach ($array as $i): ?>
+<?php $loop->start($array); foreach($array as $i): ?>
 <?php echo $i; ?>
-<?php endforeach; ?>
+<?php $loop->increment(); endforeach; $loop->end(); ?>
 --}}

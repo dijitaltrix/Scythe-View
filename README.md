@@ -1,18 +1,20 @@
 # Scythe View
 
-_pronounced [sahyth]_
+_pronounced [sahyth] - Olde English word for a curved blade for cutting by hand_
 
 A simple implementation of Laravel Blade for rendering blade syntax in views into a PSR-7 Response object. 
 This has no dependencies and it works great with Slim Framework 3.
 
-This implementation does not aim for feature parity, that is beyond the scope of this project.
-It aims to be a lightweight, simple and fast wrapper around PHP.
-It does offer some useful methods and the ability to add custom directives through callbacks.
-If you need full compatibility you can use a package such as [philo/laravel-blade](https://packagist.org/packages/philo/laravel-blade).
-
 If you're unfamiliar with Blade as a view renderer it's main advantage is it's *lightness*, it is essentially a simple wrapper around PHP.
 The syntax behaves as a PHP programmer would expect it to, so for those familar with PHP there is very little mental juggling required to understand Blade.
 
+This implementation does not aim for feature parity, that is beyond the scope of this project.
+It does offer some useful methods and the ability to add custom directives through callbacks.
+If you need full compatibility you can use the full Laravel Blade package via [philo/laravel-blade](https://packagist.org/packages/philo/laravel-blade).
+
+**Note:** Currently unsupported features `@verbatim` `@component` `@hasSection` `@auth`* `@guest`*
+
+*These could be added using a directive callback to suit your framework
 
 ### Table of Contents  
 * [Installation](#installation)
@@ -27,6 +29,10 @@ The syntax behaves as a PHP programmer would expect it to, so for those familar 
     * [Directives](#directives)
     * [Stacks](#stacks)
 * [Methods](#methods)
+    * [addDirective](#addDirective\($placeholder,_$callback\))
+    * [addNamespace](#addNamespace\($name,_$path\))
+    * [exists](#exists\($template\))
+    * [renderString](#renderString\($string,_$data=[]\))
 * [To do or not to do](#to_do_or_not_to_do)
 
 # Installation
@@ -175,7 +181,7 @@ Converts the string to lowercase, then capitalises each word
 ```
 
 ### format
-This is just a wrapper around the handy sprintf function, you can also use @sprintf!
+This is just a wrapper around the sprintf function, to help your muscle memory you may also call it as @sprintf
 ```html
 @format("There were %s in the %s", "dogs", "yard")
 <!-- There were dogs in the yard -->
@@ -305,6 +311,27 @@ It also supports the generation of the forelse structure if you pass a view to d
 
 ```
 
+#### Loop variable
+A loop helper is available, this works identically to the Blade $loop helper
+
+**Property**       | **Description**                                           
+-------------------|-----------------------------------------------------------
+$loop->index	   | The index of the current loop iteration (starts at 0).    
+-------------------|-----------------------------------------------------------
+$loop->iteration   | The current loop iteration (starts at 1).                 
+-------------------|-----------------------------------------------------------
+$loop->remaining   | The iteration remaining in the loop.                      
+-------------------|-----------------------------------------------------------
+$loop->count	   | The total number of items in the array being iterated.    
+-------------------|-----------------------------------------------------------
+$loop->first	   | Whether this is the first iteration through the loop.     
+-------------------|-----------------------------------------------------------
+$loop->last	       | Whether this is the last iteration through the loop.      
+-------------------|-----------------------------------------------------------
+$loop->depth	   | The nesting level of the current loop.                    
+-------------------|-----------------------------------------------------------
+$loop->parent	   | When in a nested loop, the parent's loop variable.        
+
 ## Inheritance
 
 ### extends
@@ -324,10 +351,41 @@ Sections define areas of content to be inserted into a parent template
 ```
 
 #### parent
-Not yet implemented
-
-### yield
+Sections can be merged between templates using the @parent directive.
 ```html
+<!-- parent.blade.php -->
+@section('sidebar')
+    <h3>This is the sidebar content</h3>
+@show
+
+<!-- child.blade.php -->
+@section('sidebar')
+    @parent
+    <ul>
+        <li>This is a list item</li>
+        <li>And so is this</li>
+        <li>Another item in the list</li>
+    </ul>
+@endsection
+```
+
+Will display as
+
+```html
+<h3>This is the sidebar content</h3>
+<ul>
+    <li>This is a list item</li>
+    <li>And so is this</li>
+    <li>Another item in the list</li>
+</ul>
+```
+
+
+### replace or yield
+Replaced with the contents of the child template section definition
+```html
+<title>@replace('title')</title>
+<!-- OR -->
 <title>@yield('title')</title>
 <!-- <title>Muppets cast listing</title> -->
 ```
@@ -346,13 +404,52 @@ Include another blade template, all variables will be available to the included 
 
 
 ## Directives
-Extend Scythe with custom callbacks, to be implemented
+Define your own placeholders that insert content via callbacks
+```php
+// output a string
+$view->addDirective('/@hello/i', 'Hello world');
+
+// output the result of a callback
+$view->addDirective('/@hello/i', function(){
+    return 'Hello world';
+});
+//TODO pass parameters from directive to callback
+``` 
 
 <!-- You can add your own custom commands using the addCommand method -->
 
 ## Stacks
-To be implemented
+Push to stacks from your child templates, then they will be appended to the @stack directive in your parent template 
+```php
+// child.blade.php
+@extends('parent')
 
+@section('title', 'The title')
+
+@push('head')
+<link rel="stylesheet" href="/css/child.css" type="text/css" media="screen">
+@endpush
+
+@push('scripts')
+<script src="child.js"></script>
+<script type="text/javascript">
+    alert('Some alert');
+</script>
+@endpush
+
+// parent.blade.php
+<html>
+<head>
+    @stack('head')
+</head>
+<body>
+    @yield('body')
+    @stack('scripts')
+</body>
+</html>
+    
+
+```
 
 
 # Methods
@@ -409,22 +506,14 @@ $view->renderString($blade, ['title'=>'The Muppet Show']);
 
 
 # To do or not to do
-### @inject
-This will probably not be implemented I feel it's too easy to abuse and it's not good practice to allow the view to pull in whatever it likes. 
-Data and dependencies should be generated in the 'Domain' and injected into the view so the view should already have eveyrthing it needs.
-As the template renders down to plain php you are of course able to execute in any code you like.
+### Components and slots
+No plans to introduce this, use @include as an alternative.
 
-### The loop variable
-It is possible to get the loop variable working for a single loop, however it would would be shared in nested loops and strange results would ensue.
+### @inject
+No plans to implement this I feel it's not good practice to allow the view to pull in whatever data classes etc.. it likes. 
+Data and dependencies should be generated in the 'Domain' and injected into the view Response so the view should already have everything it needs.
+
+As the template renders down to plain php you are of course able to execute in any code you like between PHP tags.
 
 ### Custom if statements
-This is not planned but it will be possible to add similar functionality through custom Directives
-
-<!-- ### includeif
-To be implemented
-
-### includeWhen
-To be implemented
-
-### includeFirst
-To be implemented -->
+It is possible to add similar functionality through custom Directives

@@ -155,6 +155,22 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($expected, trim($out));
         
     }
+    
+    public function testIncludeWhen()
+    {
+        $template = '/include/includewhen';
+        $payload = [
+            'muppet' => 'Kermit',
+        ];
+        $response = $this->getResponse($template, $payload);
+        
+        $out = $this->getBodyContents($response);
+        
+        $expected = file_get_contents("tests/rendered/include/expected/includewhen.html");
+        
+        $this->assertEquals($expected, trim($out));
+        
+    }
 
     public function testExtends()
     {

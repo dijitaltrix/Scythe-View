@@ -2,21 +2,33 @@
 <html>
 <head>
     <title>This is the title</title>
+    
+<link rel="stylesheet" href="/css/child.css" type="text/css" media="screen">
 </head>
 <body>
     <div class="main">
         <h1>This is the title</h1>
         
-        <p>This is part of the parent template</p>
+<p>This is part of the parent template</p>
     </div>
     <div class="side">
         
-        <ul>
-            <li>This is the</li>
-            <li>Sidebar section</li>
-            <li>Populated from the</li>
-            <li>Child template</li>
-        </ul>
+<ul>
+    <li>This is the</li>
+    <li>Sidebar section</li>
+    <li>Populated from the</li>
+    <li>Child template</li>
+</ul>
+        <div class="static">
+            
+    
+            <h3>Some content pulled from child</h3>
+        
+    <p>This content comes from child.blade.php</p>
+        </div>
     </div>
+    
+<script src="js/child-scripts.js"></script>
+<script src="js/intermediate-scripts.js"></script>
 </body>
 </html>

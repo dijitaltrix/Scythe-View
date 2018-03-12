@@ -4,9 +4,9 @@
 empty
 @endforelse
 {{-- Expected
-<?php if ( ! empty($array)): ?><?php foreach ($array as $i): ?>
+<?php if ( ! empty($array)): $loop->start($array); foreach ($array as $i): ?>
 <?php echo htmlentities($i); ?>
-<?php endforeach; ?>
+<?php $loop->increment(); endforeach; $loop->end(); ?>
 <?php else: ?>
 empty
 <?php endif; ?>
