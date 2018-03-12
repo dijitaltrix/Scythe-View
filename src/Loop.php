@@ -69,6 +69,11 @@ class Loop {
         return self::stack(0)->count; 
     }
     
+    public static function parent()
+    {
+        throw new Exception("Not implemented");
+    }
+    
     public static function stack($index)
     {
         if (isset(self::$_stack[$index])) {
