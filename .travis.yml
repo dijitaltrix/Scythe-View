@@ -11,3 +11,6 @@ php:
 before_script: composer install
 
 script: phpunit --coverage-text --configuration phpunit.xml
+
+notifications:
+  email: "ian@igstudios.uk"
