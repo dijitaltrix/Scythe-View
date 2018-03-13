@@ -188,10 +188,10 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
     public function testNamespacePassedInConstructor()
     {
         $payload = [
-            'muppets' => (object) [
-                (object) ['name' => 'Kermit'],
-                (object) ['name' => 'Miss Piggy'],
-                (object) ['name' => 'Fozzy Bear'],
+            'muppets' => [
+                ['name' => 'Kermit'],
+                ['name' => 'Miss Piggy'],
+                ['name' => 'Fozzy Bear'],
             ]
         ];
         $settings = [
@@ -220,10 +220,10 @@ class RenderedTest extends \PHPUnit\Framework\TestCase
     public function testNamespaceAddMethod()
     {
         $payload = [
-            'muppets' => (object) [
-                (object) ['name' => 'Kermit'],
-                (object) ['name' => 'Miss Piggy'],
-                (object) ['name' => 'Fozzy Bear'],
+            'muppets' => [
+                ['name' => 'Kermit'],
+                ['name' => 'Miss Piggy'],
+                ['name' => 'Fozzy Bear'],
             ]
         ];
         
