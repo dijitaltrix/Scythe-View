@@ -53,7 +53,7 @@ Add Scythe to your container, passing the required parameters `views_path` and `
 
 ```php
 $container['view'] = function($c) {
-    return new \Ignition\Scythe([
+    return new \Dijitaltrix\Views\Scythe([
         'views_path' => 'path/to/views',
         'cache_path' => 'path/to/cache',
     ]);
@@ -77,7 +77,7 @@ You may add namespaces and directives using the methods outlined in the Methods 
 ### Use with any PSR-7 Project
 ```php
 
-$view = new \Ignition\Scythe([
+$view = new \Dijitaltrix\Views\Scythe([
     'views_path' => 'path/to/views',
     'cache_path' => 'path/to/cache',
 ]);

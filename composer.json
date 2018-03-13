@@ -2,7 +2,7 @@
   "name": "dijitaltrix/scythe-view",
   "type" : "library",
   "description": "Render blade templates into a PSR-7 Response object.",
-  "keywords": ["scythe","blade","view","template","php","renderer","slim","framework"],
+  "keywords": ["scythe","blade","view","template","php","renderer","slim"],
   "license": "MIT",
   "authors": [
     {
