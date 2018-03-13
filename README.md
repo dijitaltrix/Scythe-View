@@ -2,6 +2,8 @@
 
 _pronounced [sahyth] - Olde English word for a curved blade for cutting by hand_
 
+[![Build Status](https://travis-ci.org/dijitaltrix/PSR7-SetLocale.svg?branch=master)](https://travis-ci.org/dijitaltrix/Scythe-View.svg?branch=master)
+
 A simple implementation of Laravel Blade for rendering blade syntax in views into a PSR-7 Response object. 
 This has no dependencies and it works great with Slim Framework 3.
 
