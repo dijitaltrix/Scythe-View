@@ -1,5 +1,5 @@
 {
-  "name": "ignition/scythe-view",
+  "name": "dijitaltrix/scythe-view",
   "type" : "library",
   "description": "Render blade templates into a PSR-7 Response object.",
   "keywords": ["scythe","blade","view","template","php","renderer","slim","framework"],
@@ -7,7 +7,7 @@
   "authors": [
     {
       "name": "Ian Grindley",
-      "email": "ian@igstudios.uk"
+      "email": "ian@dijix.com"
     }
   ],
   "require": {
@@ -15,7 +15,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Dijix\\Views\\": "src",
+      "Dijitaltrix\\Views\\": "src",
       "Tests\\": "tests"
     }
   },

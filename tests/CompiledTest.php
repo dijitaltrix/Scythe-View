@@ -18,7 +18,7 @@ class CompiledTest extends \PHPUnit\Framework\TestCase
      */
     public function getRenderer($settings=[])
     {
-        return new \Dijix\Views\Scythe(array_merge([
+        return new \Dijitaltrix\Views\Scythe(array_merge([
             'views_path' => 'tests/rendered',
             'cache_path' => 'tests/rendered/cache',
         ], $settings));

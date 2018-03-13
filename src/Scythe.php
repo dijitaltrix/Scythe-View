@@ -11,12 +11,11 @@
  * @license   https://github.com/ignition/Scythe-View/blob/master/LICENSE.md (MIT License)
  */
 
-namespace Dijix\Views;
+namespace Dijitaltrix\Views;
 
 use Exception;
 use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
-
 
 class Scythe
 {

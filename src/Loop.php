@@ -6,7 +6,7 @@
  */
 
     
-namespace Dijix\Views;
+namespace Dijitaltrix\Views;
 
 use Exception;
 

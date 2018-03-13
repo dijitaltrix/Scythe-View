@@ -11,12 +11,12 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
 {
     public function testDefaults()
     {
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => 'tests',
             'cache_path' => 'tests',
         ]);
         
-        $this->assertInstanceOf(\Dijix\Views\Scythe::class, $view);
+        $this->assertInstanceOf(\Dijitaltrix\Views\Scythe::class, $view);
         
     }
     
@@ -27,7 +27,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Renderer cannot find view path at '$path'");
         
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => $path,
             'cache_path' => 'tests',
         ]);
@@ -41,7 +41,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Renderer cannot find cache path at '$path'");
         
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => 'tests',
             'cache_path' => $path,
         ]);
@@ -50,7 +50,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
     
     public function testSetNamespace()
     {
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => 'tests',
             'cache_path' => 'tests',
             'namespaces' => [
@@ -64,7 +64,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
     
     public function testSetNamespaces()
     {
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => 'tests',
             'cache_path' => 'tests',
             'namespaces' => [
@@ -80,7 +80,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
     
     public function testAddNamespaces()
     {
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => 'tests',
             'cache_path' => 'tests',
         ]);
@@ -97,7 +97,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
         $this->expectException(Exception::class);
         $this->expectExceptionMessage("Renderer cannot find namespace path at '$path'");
         
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => 'tests',
             'cache_path' => 'tests',
             'namespaces' => [
@@ -109,7 +109,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
     
     public function testSetDirective()
     {
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => 'tests',
             'cache_path' => 'tests',
             'namespaces' => [],
@@ -124,7 +124,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
     
     public function testSetDirectives()
     {
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => 'tests',
             'cache_path' => 'tests',
             'directives' => [
@@ -140,7 +140,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
     
     public function testAddDirectives()
     {
-        $view = new \Dijix\Views\Scythe([
+        $view = new \Dijitaltrix\Views\Scythe([
             'views_path' => 'tests',
             'cache_path' => 'tests',
         ]);
