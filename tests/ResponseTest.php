@@ -67,5 +67,19 @@ class ResponseTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($expected, trim($out));
         
     }
+    
+    public function testMake()
+    {
+        $view = $this->getRenderer();
+
+        $str = $view->make("hello", [
+            'name' => 'world',
+        ]);
+        
+        $expected = '<h1>Hello world</h1>';
+        
+        $this->assertEquals($expected, trim($str));
+        
+    }
 
 }

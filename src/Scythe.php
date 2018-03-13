@@ -276,6 +276,21 @@ class Scythe
     }
 
     /**
+     * Returns a rendered blade file, populated with $data
+     *
+     * @param string $blade
+     * @param array $data
+     * @return string
+     */
+    public function make($template, array $data = [])
+    {
+        $str = $this->getCompiledContents($template);
+
+        return $this->renderString($str, $data);
+
+    }
+
+    /**
      * Checks for a compiled version of the $template file
      * If cache version does not exist or is stale
      * it will compile the template and it's dependencies
