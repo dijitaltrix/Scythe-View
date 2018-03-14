@@ -230,24 +230,20 @@ class Scythe
      */
     public function render(ResponseInterface $response, $template, array $data = [])
     {
-        // check template exists
         if ( ! $this->exists($template)) {
             throw new Exception("Renderer cannot find template '$template'");
         }
 
-        // compile template and dependencies as required
         $this->compile($template);
-
-        // populate compiled template with data
+        
         $out = $this->populate($template, $data);
         
         if ($this->compact) {
             $out = $this->compact($out);
         }
-
-        $this->reset();
         
-        // add to response
+        $this->reset();
+
         $response->getBody()->write($out);
 
         return $response;
@@ -344,6 +340,8 @@ class Scythe
         $str = $this->convertPlaceholders($str);
         $str = $this->handleIncludes($str);
         $str = $this->handleDirectives($str);
+        
+        //TODO remove unused @yield or @replace or @section ... @show in parent template
 
         return $str;
 
@@ -463,12 +461,12 @@ class Scythe
 		foreach ($this->getBuild('sections') as $name => $content) {
 			$str = $this->replaceSection($str, $name, $content);
         }
-
+        
         return $str;
 
     }
 
-    /**TODO complete include when
+    /**
      * Handles includes
      *
      * @param string $str
@@ -498,7 +496,7 @@ class Scythe
             $endif = '<?php endif; ?>';
             $str = $this->replaceTag(sprintf('#@includeWhen\s?\(\s*%s\s*,\s*[(\'\")]%s[(\'\")]\s*\)#is', str_replace('$', '\$', $match[0]), $match[1]), $if.$this->getCompiledContents($match[1]).$endif, $str);
         }
-        /*
+        /*TODO put includeWhen with 4th param back in
 		foreach ($this->getMatches('/@includeWhen\s?\(\s*(.*?)\s*,\s*[\'\"](.*?)[\'\"]\s*,\s*\[(.*?)\]\)/i', $str) as $match) {
             $if = sprintf('<?php if (%s): ?>', $match[0]);
             $extract = sprintf('<?php extract([%s]); ?>', $match[2]);
@@ -831,6 +829,7 @@ class Scythe
      */
     private function getCompiledFilepath($template)
     {
+        //TODO set property and refer to that, reset will remove
         return $this->cache_path.'/'.md5($template);
     }
 
