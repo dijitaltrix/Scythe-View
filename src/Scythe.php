@@ -341,8 +341,8 @@ class Scythe
         if (substr($str, 0, 9) == '@extends(') {
             $str = $this->handleExtends($str);
         }
-        $str = $this->handleIncludes($str);
         $str = $this->convertPlaceholders($str);
+        $str = $this->handleIncludes($str);
         $str = $this->handleDirectives($str);
 
         return $str;
@@ -476,16 +476,16 @@ class Scythe
      */
     private function handleIncludes($str)
     {
-		foreach ($this->getMatches('/\@include\s?\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*,\s*\[(.*?)\]\s*\)/is', $str) as $match) {
+		foreach ($this->getMatches('/\@include\s?\(\s*[\'|\"]([a-z0-9:\-\_\/\.]+)[\'|\"]\s*,\s*\[(.*?)\]\s*\)/is', $str) as $match) {
             $extract = sprintf('<?php extract([%s]); ?>', $match[1]);
             $str = $this->replaceTag(sprintf("#@include\s?\([(\'\")]%s[(\'\")]\s*,\s*\[%s\]\s*\)#is", $match[0], $match[1]), $extract.$this->getCompiledContents($match[0]), $str);
         }
         
-		foreach ($this->getMatches('/\@include\s?\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
+		foreach ($this->getMatches('/\@include\s?\(\s*[\'|\"]([a-z0-9:\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
             $str = $this->replaceTag(sprintf("#@include\s?\([(\'\")]%s[(\'\")]\)#is", $match), $this->getCompiledContents($match), $str);
         }
 
-		foreach ($this->getMatches('/\@includeif\s?\(\s*[\'|\"]([a-z0-9\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
+		foreach ($this->getMatches('/\@includeif\s?\(\s*[\'|\"]([a-z0-9:\-\_\/\.]+)[\'|\"]\s*\)/i', $str) as $match) {
             if ($this->exists($match)) {
                 $str = $this->replaceTag(sprintf("#@includeif\s?\([(\'\")]%s[(\'\")]\)#is", $match), $this->getCompiledContents($match), $str);
 			} else {
