@@ -337,8 +337,8 @@ class Scythe
         if (substr($str, 0, 9) == '@extends(') {
             $str = $this->handleExtends($str);
         }
-        $str = $this->convertPlaceholders($str);
         $str = $this->handleIncludes($str);
+        $str = $this->convertPlaceholders($str);
         $str = $this->handleDirectives($str);
         
         //TODO remove unused @yield or @replace or @section ... @show in parent template
