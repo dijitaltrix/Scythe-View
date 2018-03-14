@@ -811,7 +811,16 @@ class Scythe
      */
     private function isCompiled($template, $check_timestamps=false)
     {
+        $template_filepath = $this->getTemplateFilepath($template);
+        $compiled_filepath = $this->getCompiledFilepath($template);
+        if (file_exists($compiled_filepath)) {
+            if (filemtime($compiled_filepath) >= filemtime($template_filepath)) {
+                return true;
+            }
+        }
+        
         return false;
+        
     }
 
     /**
