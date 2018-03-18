@@ -16,5 +16,15 @@
             <directory>tests/</directory>
         </testsuite>
     </testsuites>
-
+    <filter>
+        <blacklist>
+            <directory suffix=".php">vendor</directory>
+            <directory suffix=".php">tests</directory>
+        </blacklist>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <file>src/Scythe.php</file>
+            <file>src/Loop.php</file>
+        </whitelist>
+    </filter>
+    
 </phpunit>
