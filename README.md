@@ -42,7 +42,7 @@ If you need full compatibility you can use the full Laravel Blade package via [p
 Install with [Composer](http://getcomposer.org):
 
 ```sh
-composer require ignition/scythe-view
+composer require dijitaltrix/scythe-view
 ```
 
 ## Getting started
