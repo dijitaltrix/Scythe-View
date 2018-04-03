@@ -848,7 +848,6 @@ class Scythe
      */
     private function getCompiledFilepath($template)
     {
-        //TODO set property and refer to that, reset will remove
         return $this->cache_path.'/'.md5($template);
     }
 
@@ -872,7 +871,7 @@ class Scythe
 
     }
 
-    /** TODO exceptions
+    /** 
      * Stores the cmpiled template in the cache folder
      *
      * @param string $template
