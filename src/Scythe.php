@@ -825,10 +825,16 @@ class Scythe
     {
         $template_filepath = $this->getTemplateFilepath($template);
         $compiled_filepath = $this->getCompiledFilepath($template);
-        if (file_exists($compiled_filepath)) {
+        
+        if (file_exists($compiled_filepath))
+        {
+            $last_updated = filemtime($template_filepath);
             if (filemtime($compiled_filepath) >= filemtime($template_filepath)) {
+            
+            if ($last_compiled >= $last_updated) {
                 return true;
             }
+
         }
         
         return false;
