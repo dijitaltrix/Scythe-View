@@ -454,7 +454,7 @@ class Scythe
 		}
 
 		# load compiled parent template
-		foreach ($this->getMatches('/\@extends\(\s*[\'|\"]([a-z0-9:\-\_\/\.\]+)[\'|\"]\s*\)/i', $str) as $match) {
+		foreach ($this->getMatches('/\@extends\(\s*[\'|\"]([a-z0-9\-\_\/\.\:]+)[\'|\"]\s*\)/i', $str) as $match) {
 			$str = $this->getCompiledContents($match);
 		}
         
