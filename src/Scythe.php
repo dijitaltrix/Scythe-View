@@ -707,7 +707,7 @@ class Scythe
             '/@each\s?\((.*)\s*,\s*(.*)\s*,\s*[(\'|\")](.*)[(\'|\")]\s*\)/i' => "<?php \$loop->start($2); foreach($2 as \$$3): ?>\n@include($1)\n<?php \$loop->increment(); endforeach; \$loop->end(); ?>",
 
             # control structures
-			'/@(if|elseif|for|while)(\s*(.*?)+\s*\))/i' => '<?php $1$2: ?>',
+			'/@(if|elseif|for|while)\s*\((.*)\)/i' => '<?php $1 ($2): ?>',
 			'/@else/i' => '<?php else: ?>',
 			'/@(endif|endfor|endwhile)/' => '<?php $1; ?>',
 
