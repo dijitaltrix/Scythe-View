@@ -195,7 +195,7 @@ class Scythe
         }
     }
 
-    /** TODO
+    /** 
      * Add a user defined directive
      *
      * @param string $match
@@ -813,7 +813,7 @@ class Scythe
 
     }
 
-    /** TODO check template is compiled and not stale
+    /**
      * Check for a compiled version of $template in the cache
      * Optionally compare timestamps to determine if cache is stale
      *
