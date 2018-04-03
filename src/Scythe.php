@@ -237,6 +237,7 @@ class Scythe
         $this->compile($template);
         
         $out = $this->populate($template, $data);
+        $out = $this->cleanup($out);
         
         if ($this->compact) {
             $out = $this->compact($out);
@@ -260,6 +261,8 @@ class Scythe
     public function renderString($blade, array $data = [])
     {
         $out = $this->compileString($blade);
+        $out = $this->populateCompiledString($out, $data);
+        $out = $this->cleanup($out);
 
         if ($this->compact) {
             $out = $this->compact($out);
@@ -267,7 +270,7 @@ class Scythe
 
         $this->reset();
 
-        return $this->populateCompiledString($out, $data);
+        return $out;
 
     }
 
@@ -340,11 +343,7 @@ class Scythe
         $str = $this->handleIncludes($str);
         $str = $this->convertPlaceholders($str);
         $str = $this->handleDirectives($str);
-        $str = $this->cleanupUnusedDirectives($str);
-        //TODO remove unused @yield or @replace or @section ... @show in parent template
-
         
-
         return $str;
 
     }
@@ -515,11 +514,9 @@ class Scythe
      * @param string $str 
      * @return string
      */
-    private function cleanupUnusedDirectives($str)
+    private function cleanup($str)
     {
-        $str = preg_replace('/@(endpush)/', '', $str);
-        $str = preg_replace('/@(yield|push|replace)\s*\((.*)\)/', '', $str);
-
+        $str = preg_replace('/@(yield|stack)\s*\((.*?)\)/', '', $str);
         return $str;
 
     }
