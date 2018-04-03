@@ -340,8 +340,10 @@ class Scythe
         $str = $this->handleIncludes($str);
         $str = $this->convertPlaceholders($str);
         $str = $this->handleDirectives($str);
-        
+        $str = $this->cleanupUnusedDirectives($str);
         //TODO remove unused @yield or @replace or @section ... @show in parent template
+
+        
 
         return $str;
 
@@ -505,6 +507,21 @@ class Scythe
         }
         */
         return $str;
+    }
+    
+    /**
+     * Removes unused directives so they don't appear in output
+     *
+     * @param string $str 
+     * @return string
+     */
+    private function cleanupUnusedDirectives($str)
+    {
+        $str = preg_replace('/@(endpush)/', '', $str);
+        $str = preg_replace('/@(yield|push|replace)\s*\((.*)\)/', '', $str);
+
+        return $str;
+
     }
 
     /**
